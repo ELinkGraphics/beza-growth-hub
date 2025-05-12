@@ -14,7 +14,7 @@ const TestimonialCard: React.FC<TestimonialCardProps> = ({
   quote, 
   name, 
   role, 
-  avatarUrl 
+  avatarUrl = "/lovable-uploads/8ded2ada-1426-42c8-88e2-5c13060c5b5f.png" 
 }) => {
   const initials = name
     .split(" ")

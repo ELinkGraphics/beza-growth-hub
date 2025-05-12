@@ -16,7 +16,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({
   subtitle,
   ctaText,
   ctaLink,
-  imageUrl = "/placeholder.svg",
+  imageUrl = "/lovable-uploads/8ded2ada-1426-42c8-88e2-5c13060c5b5f.png",
 }) => {
   return (
     <section className="relative bg-gradient-to-br from-brand-50 to-white py-20 overflow-hidden">
@@ -49,7 +49,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({
             <div className="absolute -bottom-4 -right-4 w-full h-full rounded-full bg-brand-200 opacity-20"></div>
             <img
               src={imageUrl}
-              alt="Hero"
+              alt="Beza"
               className="relative z-10 w-full h-full object-cover rounded-lg shadow-xl"
             />
           </div>

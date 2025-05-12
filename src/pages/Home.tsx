@@ -88,7 +88,7 @@ const Home = () => {
               <div className="relative w-full aspect-square max-w-md mx-auto">
                 <div className="absolute -bottom-4 -right-4 w-full h-full rounded-full bg-brand-200 opacity-20"></div>
                 <img
-                  src="/placeholder.svg"
+                  src="/lovable-uploads/8ded2ada-1426-42c8-88e2-5c13060c5b5f.png"
                   alt="Beza"
                   className="relative z-10 w-full h-full object-cover rounded-lg shadow-xl"
                 />

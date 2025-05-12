@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Separator } from "@/components/ui/separator";
 
@@ -23,7 +22,7 @@ const About = () => {
               <div className="relative">
                 <div className="absolute -top-4 -left-4 w-full h-full rounded-full bg-accent-200 opacity-20"></div>
                 <img
-                  src="/placeholder.svg"
+                  src="/lovable-uploads/8ded2ada-1426-42c8-88e2-5c13060c5b5f.png"
                   alt="Beza"
                   className="relative z-10 w-full rounded-lg shadow-lg"
                 />
