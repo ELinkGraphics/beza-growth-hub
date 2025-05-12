@@ -1,11 +1,12 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { useToast } from "@/components/ui/use-toast";
 import { Label } from "@/components/ui/label";
+import { supabase } from "@/integrations/supabase/client";
 
 const AdminLogin = () => {
   const [email, setEmail] = useState("");
@@ -14,29 +15,48 @@ const AdminLogin = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
 
-  // We need to integrate Supabase for actual authentication
+  useEffect(() => {
+    // Check if user is already logged in
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        navigate("/admin/dashboard");
+      }
+    };
+    
+    checkSession();
+  }, [navigate]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
-    // This is where we would connect to Supabase for auth
-    // For now, we'll just simulate a login
-    setTimeout(() => {
-      if (email === "admin@growwithbeza.com" && password === "password123") {
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      if (data.user) {
         toast({
           title: "Login successful!",
           description: "Welcome to the admin dashboard.",
         });
         navigate("/admin/dashboard");
-      } else {
-        toast({
-          title: "Login failed",
-          description: "Invalid email or password.",
-          variant: "destructive",
-        });
       }
+    } catch (error: any) {
+      toast({
+        title: "Login failed",
+        description: error.message || "Invalid email or password.",
+        variant: "destructive",
+      });
+    } finally {
       setIsLoading(false);
-    }, 1000);
+    }
   };
 
   return (
@@ -82,9 +102,8 @@ const AdminLogin = () => {
           </form>
 
           <div className="mt-6 text-center text-sm text-gray-500">
-            <p>For demo purposes, use:</p>
-            <p className="mt-1">Email: admin@growwithbeza.com</p>
-            <p>Password: password123</p>
+            <p>Create a user in the Supabase Authentication section</p>
+            <p className="mt-1">to access the admin dashboard.</p>
           </div>
         </CardContent>
       </Card>

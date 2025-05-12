@@ -1,39 +1,100 @@
 
 import React, { useState, useEffect } from "react";
-import { useNavigate, Link, Outlet } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Calendar, Mail, ArrowLeft, Book, User } from "lucide-react";
 import { AppointmentsList } from "./AppointmentsList";
 import { ContactsList } from "./ContactsList";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/components/ui/use-toast";
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState("overview");
-  const [isAuthenticated, setIsAuthenticated] = useState(true); // For demo purposes
+  const [activeTab, setActiveTab] = useState("appointments");
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState({
+    totalAppointments: 0,
+    pendingAppointments: 0,
+    totalContacts: 0,
+    newContacts: 0
+  });
+  const { toast } = useToast();
   
-  // Mock data for dashboard
-  const stats = {
-    totalAppointments: 12,
-    pendingAppointments: 4,
-    totalContacts: 8,
-    newContacts: 3
-  };
-  
+  // Check authentication and fetch stats
   useEffect(() => {
-    // Here we would check authentication with Supabase
-    // For demo purposes, we'll just use the state
-    if (!isAuthenticated) {
-      navigate("/admin");
-    }
-  }, [isAuthenticated, navigate]);
+    const checkAuth = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (!session) {
+          navigate("/admin");
+          return;
+        }
+        
+        setIsAuthenticated(true);
+        
+        // Fetch stats from Supabase
+        const [appointmentsData, pendingAppointmentsData, contactsData, newContactsData] = await Promise.all([
+          supabase.from("appointments").select("id").count(),
+          supabase.from("appointments").select("id").eq("status", "pending").count(),
+          supabase.from("contacts").select("id").count(),
+          supabase.from("contacts").select("id").eq("is_read", false).count(),
+        ]);
+        
+        setStats({
+          totalAppointments: appointmentsData.count || 0,
+          pendingAppointments: pendingAppointmentsData.count || 0,
+          totalContacts: contactsData.count || 0,
+          newContacts: newContactsData.count || 0
+        });
+      } catch (error) {
+        console.error("Error checking authentication:", error);
+        toast({
+          title: "Authentication Error",
+          description: "Please log in again.",
+          variant: "destructive",
+        });
+        navigate("/admin");
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    checkAuth();
+  }, [navigate, toast]);
   
-  const handleLogout = () => {
-    // Here we would sign out with Supabase
-    setIsAuthenticated(false);
-    navigate("/admin");
+  const handleLogout = async () => {
+    try {
+      await supabase.auth.signOut();
+      toast({
+        title: "Logged out successfully",
+        description: "You have been signed out.",
+      });
+      navigate("/admin");
+    } catch (error) {
+      console.error("Error logging out:", error);
+      toast({
+        title: "Error logging out",
+        description: "Please try again.",
+        variant: "destructive",
+      });
+    }
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <p>Loading...</p>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return null; // Will redirect in useEffect
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">

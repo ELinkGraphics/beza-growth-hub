@@ -1,63 +1,77 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/components/ui/use-toast";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { supabase } from "@/integrations/supabase/client";
 
-// Mock appointment data
-const mockAppointments = [
-  {
-    id: "1",
-    name: "John Smith",
-    email: "john.smith@example.com",
-    phone: "(123) 456-7890",
-    date: "2025-05-20",
-    time: "10:00 AM",
-    serviceType: "Personal Coaching",
-    message: "Looking forward to discussing career transition strategies.",
-    status: "confirmed"
-  },
-  {
-    id: "2",
-    name: "Sarah Johnson",
-    email: "sarah.j@example.com",
-    phone: "(234) 567-8901",
-    date: "2025-05-21",
-    time: "2:00 PM",
-    serviceType: "Career Development",
-    message: "Need help with leadership skills for a new role.",
-    status: "pending"
-  },
-  {
-    id: "3",
-    name: "Michael Chen",
-    email: "m.chen@example.com",
-    phone: "(345) 678-9012",
-    date: "2025-05-22",
-    time: "11:00 AM",
-    serviceType: "Group Workshop",
-    message: "Interested in team-building strategies for my department.",
-    status: "pending"
-  },
-  {
-    id: "4",
-    name: "Emily Rodriguez",
-    email: "emily.r@example.com",
-    phone: "(456) 789-0123",
-    date: "2025-05-18",
-    time: "9:00 AM",
-    serviceType: "Initial Consultation",
-    message: "Exploring options for personal development coaching.",
-    status: "confirmed"
-  }
-];
+type Appointment = {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  date: string;
+  time: string;
+  service_type: string;
+  message: string | null;
+  status: string;
+  created_at: string;
+};
 
 export const AppointmentsList = () => {
-  const [appointments, setAppointments] = useState(mockAppointments);
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+  
+  useEffect(() => {
+    const fetchAppointments = async () => {
+      try {
+        const { data, error } = await supabase
+          .from("appointments")
+          .select("*")
+          .order("created_at", { ascending: false });
+        
+        if (error) {
+          throw error;
+        }
+        
+        setAppointments(data || []);
+      } catch (error) {
+        console.error("Error fetching appointments:", error);
+        toast({
+          title: "Error loading appointments",
+          description: "Please try refreshing the page",
+          variant: "destructive",
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchAppointments();
+    
+    // Set up real-time subscription
+    const channel = supabase
+      .channel('appointments-changes')
+      .on('postgres_changes', { 
+        event: '*', 
+        schema: 'public', 
+        table: 'appointments' 
+      }, (payload) => {
+        console.log('Realtime appointment update:', payload);
+        
+        // Refresh the appointments list
+        fetchAppointments();
+      })
+      .subscribe();
+    
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [toast]);
   
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -72,29 +86,98 @@ export const AppointmentsList = () => {
     }
   };
   
-  const handleStatusChange = (id: string, newStatus: string) => {
-    // Here we would update the status in Supabase
-    // For now, we'll just update the local state
-    setAppointments(appointments.map(appointment => 
-      appointment.id === id ? { ...appointment, status: newStatus } : appointment
-    ));
-    
-    toast({
-      title: "Status Updated",
-      description: `Appointment status changed to ${newStatus}.`,
-    });
+  const handleStatusChange = async (id: string, newStatus: string) => {
+    try {
+      const { error } = await supabase
+        .from("appointments")
+        .update({ status: newStatus })
+        .eq("id", id);
+      
+      if (error) {
+        throw error;
+      }
+      
+      // If confirmed, send email notification
+      if (newStatus === "confirmed") {
+        try {
+          const response = await fetch(`${supabase.supabaseUrl}/functions/v1/send-notification`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${supabase.supabaseKey}`,
+            },
+            body: JSON.stringify({ type: "appointment", id }),
+          });
+          
+          if (!response.ok) {
+            throw new Error("Failed to send notification");
+          }
+        } catch (notificationError) {
+          console.error("Error sending notification:", notificationError);
+          toast({
+            title: "Status updated, but confirmation email failed",
+            description: "The appointment was confirmed, but we couldn't send an email notification.",
+            variant: "destructive",
+          });
+        }
+      }
+      
+      toast({
+        title: "Status Updated",
+        description: `Appointment status changed to ${newStatus}.`,
+      });
+      
+      // Update local state
+      setAppointments(appointments.map(appointment => 
+        appointment.id === id ? { ...appointment, status: newStatus } : appointment
+      ));
+    } catch (error) {
+      console.error("Error updating appointment status:", error);
+      toast({
+        title: "Error updating status",
+        description: "Please try again later",
+        variant: "destructive",
+      });
+    }
   };
   
-  const handleDelete = (id: string) => {
-    // Here we would delete the appointment in Supabase
-    // For now, we'll just update the local state
-    setAppointments(appointments.filter(appointment => appointment.id !== id));
-    
-    toast({
-      title: "Appointment Deleted",
-      description: "The appointment has been removed from the system.",
-    });
+  const handleDelete = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from("appointments")
+        .delete()
+        .eq("id", id);
+      
+      if (error) {
+        throw error;
+      }
+      
+      toast({
+        title: "Appointment Deleted",
+        description: "The appointment has been removed from the system.",
+      });
+      
+      // Update local state
+      setAppointments(appointments.filter(appointment => appointment.id !== id));
+    } catch (error) {
+      console.error("Error deleting appointment:", error);
+      toast({
+        title: "Error deleting appointment",
+        description: "Please try again later",
+        variant: "destructive",
+      });
+    }
   };
+
+  if (loading) {
+    return (
+      <Card>
+        <CardContent className="p-6 text-center">
+          <p>Loading appointments...</p>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card>
@@ -131,7 +214,7 @@ export const AppointmentsList = () => {
                 </TableCell>
                 <TableCell>
                   <div>
-                    <p>{appointment.serviceType}</p>
+                    <p>{appointment.service_type}</p>
                     <p className="text-sm text-gray-500 line-clamp-1 max-w-[200px]">
                       {appointment.message}
                     </p>

@@ -8,6 +8,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { Label } from "@/components/ui/label";
 import { Calendar } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { supabase } from "@/integrations/supabase/client";
 
 const BookAppointment = () => {
   const [name, setName] = useState("");
@@ -26,19 +27,34 @@ const BookAppointment = () => {
     "1:00 PM", "2:00 PM", "3:00 PM", "4:00 PM"
   ];
 
-  // We need to integrate Supabase for actual functionality
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
 
-    // This is where we would connect to Supabase
-    // For now, we'll just simulate a submission
-    setTimeout(() => {
+    try {
+      // Insert appointment data into Supabase
+      const { error } = await supabase.from("appointments").insert([
+        {
+          name,
+          email,
+          phone,
+          date,
+          time,
+          service_type: serviceType,
+          message,
+        },
+      ]);
+
+      if (error) {
+        throw error;
+      }
+
       toast({
         title: "Appointment request submitted!",
         description: "We'll confirm your appointment shortly via email.",
       });
-      setIsSubmitting(false);
+
+      // Clear form
       setName("");
       setEmail("");
       setPhone("");
@@ -46,7 +62,16 @@ const BookAppointment = () => {
       setTime("");
       setServiceType("");
       setMessage("");
-    }, 1000);
+    } catch (error) {
+      toast({
+        title: "Error submitting appointment",
+        description: "Please try again later.",
+        variant: "destructive",
+      });
+      console.error("Error submitting appointment:", error);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (

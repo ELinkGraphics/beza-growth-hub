@@ -7,6 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/components/ui/use-toast";
 import { Label } from "@/components/ui/label";
 import { Mail, Phone, MapPin } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 const Contact = () => {
   const [name, setName] = useState("");
@@ -16,24 +17,44 @@ const Contact = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
 
-  // We need to integrate Supabase for actual functionality
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
 
-    // This is where we would connect to Supabase
-    // For now, we'll just simulate a submission
-    setTimeout(() => {
+    try {
+      // Insert contact message into Supabase
+      const { error } = await supabase.from("contacts").insert([
+        {
+          name,
+          email,
+          subject,
+          message,
+        },
+      ]);
+
+      if (error) {
+        throw error;
+      }
+
       toast({
         title: "Message sent successfully!",
         description: "Thanks for reaching out. We'll get back to you soon.",
       });
-      setIsSubmitting(false);
+
       setName("");
       setEmail("");
       setSubject("");
       setMessage("");
-    }, 1000);
+    } catch (error) {
+      toast({
+        title: "Error sending message",
+        description: "Please try again later.",
+        variant: "destructive",
+      });
+      console.error("Error sending message:", error);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
