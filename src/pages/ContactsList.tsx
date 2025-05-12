@@ -84,11 +84,14 @@ export const ContactsList = () => {
       
       try {
         // Notify admin about the new message
-        const response = await fetch(`${supabase.supabaseUrl}/functions/v1/send-notification`, {
+        const SUPABASE_URL = "https://zxjeierbgixwirzcfxzl.supabase.co";
+        const SUPABASE_KEY = supabase.auth.getSession().then(({ data }) => data.session?.access_token);
+        
+        const response = await fetch(`${SUPABASE_URL}/functions/v1/send-notification`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            "Authorization": `Bearer ${supabase.supabaseKey}`,
+            "Authorization": `Bearer ${await SUPABASE_KEY}`,
           },
           body: JSON.stringify({ type: "contact", id }),
         });

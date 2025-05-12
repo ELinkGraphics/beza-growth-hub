@@ -37,18 +37,18 @@ const AdminDashboard = () => {
         setIsAuthenticated(true);
         
         // Fetch stats from Supabase
-        const [appointmentsData, pendingAppointmentsData, contactsData, newContactsData] = await Promise.all([
-          supabase.from("appointments").select("id").count(),
-          supabase.from("appointments").select("id").eq("status", "pending").count(),
-          supabase.from("contacts").select("id").count(),
-          supabase.from("contacts").select("id").eq("is_read", false).count(),
+        const [appointmentsRes, pendingAppointmentsRes, contactsRes, newContactsRes] = await Promise.all([
+          supabase.from("appointments").select("id", { count: 'exact', head: true }),
+          supabase.from("appointments").select("id", { count: 'exact', head: true }).eq("status", "pending"),
+          supabase.from("contacts").select("id", { count: 'exact', head: true }),
+          supabase.from("contacts").select("id", { count: 'exact', head: true }).eq("is_read", false),
         ]);
         
         setStats({
-          totalAppointments: appointmentsData.count || 0,
-          pendingAppointments: pendingAppointmentsData.count || 0,
-          totalContacts: contactsData.count || 0,
-          newContacts: newContactsData.count || 0
+          totalAppointments: appointmentsRes.count || 0,
+          pendingAppointments: pendingAppointmentsRes.count || 0,
+          totalContacts: contactsRes.count || 0,
+          newContacts: newContactsRes.count || 0
         });
       } catch (error) {
         console.error("Error checking authentication:", error);
