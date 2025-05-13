@@ -4,11 +4,12 @@ import { useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Calendar, Mail, ArrowLeft, Book, User } from "lucide-react";
+import { Calendar, Mail, ArrowLeft, Book, User, Settings } from "lucide-react";
 import { AppointmentsList } from "./AppointmentsList";
 import { ContactsList } from "./ContactsList";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
+import WebsiteCustomizer from "@/components/admin/WebsiteCustomizer";
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
@@ -38,10 +39,10 @@ const AdminDashboard = () => {
         
         // Fetch stats from Supabase
         const [appointmentsRes, pendingAppointmentsRes, contactsRes, newContactsRes] = await Promise.all([
-          supabase.from("appointments").select("id", { count: 'exact', head: true }),
-          supabase.from("appointments").select("id", { count: 'exact', head: true }).eq("status", "pending"),
-          supabase.from("contacts").select("id", { count: 'exact', head: true }),
-          supabase.from("contacts").select("id", { count: 'exact', head: true }).eq("is_read", false),
+          supabase.from("appointments").select("*", { count: 'exact', head: true }),
+          supabase.from("appointments").select("*", { count: 'exact', head: true }).eq("status", "pending"),
+          supabase.from("contacts").select("*", { count: 'exact', head: true }),
+          supabase.from("contacts").select("*", { count: 'exact', head: true }).eq("is_read", false),
         ]);
         
         setStats({
@@ -207,6 +208,10 @@ const AdminDashboard = () => {
               <Mail className="h-4 w-4 mr-2" />
               Contact Messages
             </TabsTrigger>
+            <TabsTrigger value="website" className="text-base">
+              <Settings className="h-4 w-4 mr-2" />
+              Website Customization
+            </TabsTrigger>
           </TabsList>
           
           <TabsContent value="appointments">
@@ -215,6 +220,10 @@ const AdminDashboard = () => {
           
           <TabsContent value="contacts">
             <ContactsList />
+          </TabsContent>
+          
+          <TabsContent value="website">
+            <WebsiteCustomizer />
           </TabsContent>
         </Tabs>
       </div>
