@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,6 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 import { Eye, Plus, Minus, Upload } from "lucide-react";
+import { updateWebsiteContent } from "@/hooks/use-website-content";
 
 interface TestimonialsEditorProps {
   onSave: (data: any) => void;
@@ -153,19 +153,23 @@ const TestimonialsEditor: React.FC<TestimonialsEditorProps> = ({ onSave }) => {
   const uploadImage = async (file: File, path: string) => {
     const fileName = `${Date.now()}_${file.name.replace(/\s+/g, '_')}`;
     
-    // This is a placeholder for the actual Supabase storage upload
-    // In a real implementation, we would use Supabase storage here
-    const { data, error } = await supabase.storage
-      .from('website-images')
-      .upload(path + '/' + fileName, file);
+    try {
+      // Upload to Supabase storage
+      const { data, error } = await supabase.storage
+        .from('website-images')
+        .upload(path + '/' + fileName, file);
+        
+      if (error) throw error;
       
-    if (error) throw error;
-    
-    const fileUrl = supabase.storage
-      .from('website-images')
-      .getPublicUrl(path + '/' + fileName).data.publicUrl;
-      
-    return fileUrl;
+      const fileUrl = supabase.storage
+        .from('website-images')
+        .getPublicUrl(path + '/' + fileName).data.publicUrl;
+        
+      return fileUrl;
+    } catch (error) {
+      console.error("Error uploading image:", error);
+      throw error;
+    }
   };
 
   const handleSubmit = async () => {
@@ -185,24 +189,14 @@ const TestimonialsEditor: React.FC<TestimonialsEditorProps> = ({ onSave }) => {
         }
       }
 
-      // In a real implementation, we would save the content to Supabase here
-      const { error } = await supabase
-        .from('website_content')
-        .upsert({ 
-          section: 'testimonials',
-          content: updatedContent
-        }, { onConflict: 'section' });
-        
-      if (error) throw error;
+      // Update content using our new helper function
+      const success = await updateWebsiteContent('testimonials', updatedContent);
       
-      onSave(updatedContent);
-      toast({
-        title: "Changes saved",
-        description: "Your testimonials have been updated successfully.",
-      });
-      
-      // Clear the avatar files after successful upload
-      setAvatarFiles({});
+      if (success) {
+        onSave(updatedContent);
+        // Clear the avatar files after successful upload
+        setAvatarFiles({});
+      }
     } catch (error) {
       console.error("Error saving testimonials:", error);
       toast({

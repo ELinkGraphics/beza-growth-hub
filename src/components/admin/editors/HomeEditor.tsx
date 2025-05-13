@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,6 +8,7 @@ import { Separator } from "@/components/ui/separator";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 import { Eye, Upload } from "lucide-react";
+import { updateWebsiteContent } from "@/hooks/use-website-content";
 
 interface HomeEditorProps {
   onSave: (data: any) => void;
@@ -61,7 +61,6 @@ const HomeEditor: React.FC<HomeEditorProps> = ({ onSave }) => {
   const { toast } = useToast();
 
   useEffect(() => {
-    // In a real implementation, we would fetch the content from Supabase here
     const fetchContent = async () => {
       try {
         const { data, error } = await supabase
@@ -111,19 +110,23 @@ const HomeEditor: React.FC<HomeEditorProps> = ({ onSave }) => {
   const uploadImage = async (file: File, path: string) => {
     const fileName = `${Date.now()}_${file.name}`;
     
-    // This is a placeholder for the actual Supabase storage upload
-    // In a real implementation, we would use Supabase storage here
-    const { data, error } = await supabase.storage
-      .from('website-images')
-      .upload(path + '/' + fileName, file);
+    try {
+      // Upload to Supabase storage
+      const { data, error } = await supabase.storage
+        .from('website-images')
+        .upload(path + '/' + fileName, file);
+        
+      if (error) throw error;
       
-    if (error) throw error;
-    
-    const fileUrl = supabase.storage
-      .from('website-images')
-      .getPublicUrl(path + '/' + fileName).data.publicUrl;
-      
-    return fileUrl;
+      const fileUrl = supabase.storage
+        .from('website-images')
+        .getPublicUrl(path + '/' + fileName).data.publicUrl;
+        
+      return fileUrl;
+    } catch (error) {
+      console.error("Error uploading image:", error);
+      throw error;
+    }
   };
 
   const handleSubmit = async () => {
@@ -144,21 +147,12 @@ const HomeEditor: React.FC<HomeEditorProps> = ({ onSave }) => {
         updatedContent.about.aboutImage = aboutImageUrl;
       }
 
-      // In a real implementation, we would save the content to Supabase here
-      const { error } = await supabase
-        .from('website_content')
-        .upsert({ 
-          section: 'home',
-          content: updatedContent
-        }, { onConflict: 'section' });
-        
-      if (error) throw error;
+      // Update content using our new helper function
+      const success = await updateWebsiteContent('home', updatedContent);
       
-      onSave(updatedContent);
-      toast({
-        title: "Changes saved",
-        description: "Your home page content has been updated successfully.",
-      });
+      if (success) {
+        onSave(updatedContent);
+      }
     } catch (error) {
       console.error("Error saving home content:", error);
       toast({

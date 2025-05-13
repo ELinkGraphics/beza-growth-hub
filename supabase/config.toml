@@ -1,1 +1,4 @@
+
 project_id = "zxjeierbgixwirzcfxzl"
+[storage.website-images]
+public = true
