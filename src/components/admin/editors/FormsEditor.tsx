@@ -155,9 +155,9 @@ const FormsEditor: React.FC<FormsEditorProps> = ({ onSave }) => {
   const { toast } = useToast();
 
   useEffect(() => {
-    // In a real implementation, we would fetch the content from Supabase here
     const fetchContent = async () => {
       try {
+        // Using any to bypass TypeScript's type checking since we know the structure is valid
         const { data, error } = await supabase
           .from('website_content')
           .select('*')
@@ -374,13 +374,13 @@ const FormsEditor: React.FC<FormsEditorProps> = ({ onSave }) => {
     try {
       setLoading(true);
 
-      // In a real implementation, we would save the content to Supabase here
+      // Using any to bypass TypeScript's type checking for the website_content table
       const { error } = await supabase
         .from('website_content')
         .upsert({ 
           section: 'forms',
           content: content
-        }, { onConflict: 'section' });
+        } as any, { onConflict: 'section' });
         
       if (error) throw error;
       
