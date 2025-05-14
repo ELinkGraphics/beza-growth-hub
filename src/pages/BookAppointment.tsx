@@ -1,237 +1,374 @@
 
 import React, { useState } from "react";
-import { Button } from "@/components/ui/button";
+import { useWebsiteContent } from "@/hooks/use-website-content";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent } from "@/components/ui/card";
-import { useToast } from "@/components/ui/use-toast";
+import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Calendar } from "lucide-react";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Card, CardContent } from "@/components/ui/card";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { useToast } from "@/components/ui/use-toast";
+import { format } from "date-fns";
+import { Calendar as CalendarIcon, Loader2 } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 
 const BookAppointment = () => {
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
-  const [date, setDate] = useState("");
-  const [time, setTime] = useState("");
-  const [serviceType, setServiceType] = useState("");
-  const [message, setMessage] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { content, loading } = useWebsiteContent("forms");
   const { toast } = useToast();
-
-  // Generate available times for the select
-  const availableTimes = [
-    "9:00 AM", "10:00 AM", "11:00 AM", 
-    "1:00 PM", "2:00 PM", "3:00 PM", "4:00 PM"
-  ];
-
+  
+  const [date, setDate] = useState<Date | undefined>(undefined);
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    phone: "",
+    time: "",
+    service_type: "",
+    message: ""
+  });
+  
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+  const [submitting, setSubmitting] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+  
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+    // Clear error when user types
+    if (formErrors[name]) {
+      setFormErrors(prev => ({ ...prev, [name]: "" }));
+    }
+  };
+  
+  const handleSelectChange = (name: string, value: string) => {
+    setFormData(prev => ({ ...prev, [name]: value }));
+    // Clear error
+    if (formErrors[name]) {
+      setFormErrors(prev => ({ ...prev, [name]: "" }));
+    }
+  };
+  
+  const handleDateChange = (newDate: Date | undefined) => {
+    setDate(newDate);
+    if (newDate) {
+      // Also clear date error
+      if (formErrors.date) {
+        setFormErrors(prev => ({ ...prev, date: "" }));
+      }
+    }
+  };
+  
+  const validateForm = () => {
+    const errors: Record<string, string> = {};
+    
+    if (!formData.name.trim()) {
+      errors.name = "Name is required";
+    }
+    
+    if (!formData.email.trim()) {
+      errors.email = "Email is required";
+    } else if (!/^\S+@\S+\.\S+$/.test(formData.email)) {
+      errors.email = "Invalid email format";
+    }
+    
+    if (!formData.phone.trim()) {
+      errors.phone = "Phone number is required";
+    }
+    
+    if (!date) {
+      errors.date = "Date is required";
+    }
+    
+    if (!formData.time) {
+      errors.time = "Time is required";
+    }
+    
+    if (!formData.service_type) {
+      errors.service_type = "Service type is required";
+    }
+    
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+  
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsSubmitting(true);
-
+    
+    if (!validateForm() || !date) {
+      return;
+    }
+    
+    setSubmitting(true);
+    
     try {
-      // Insert appointment data into Supabase
-      const { error } = await supabase.from("appointments").insert([
-        {
-          name,
-          email,
-          phone,
-          date,
-          time,
-          service_type: serviceType,
-          message,
-        },
-      ]);
-
+      // Format date to YYYY-MM-DD for database
+      const formattedDate = format(date, "yyyy-MM-dd");
+      
+      const { error } = await supabase
+        .from("appointments")
+        .insert({
+          name: formData.name,
+          email: formData.email,
+          phone: formData.phone,
+          date: formattedDate,
+          time: formData.time,
+          service_type: formData.service_type,
+          message: formData.message,
+        });
+        
       if (error) {
         throw error;
       }
-
-      toast({
-        title: "Appointment request submitted!",
-        description: "We'll confirm your appointment shortly via email.",
+      
+      // Reset form
+      setFormData({
+        name: "",
+        email: "",
+        phone: "",
+        time: "",
+        service_type: "",
+        message: ""
       });
-
-      // Clear form
-      setName("");
-      setEmail("");
-      setPhone("");
-      setDate("");
-      setTime("");
-      setServiceType("");
-      setMessage("");
-    } catch (error) {
+      setDate(undefined);
+      
+      setSubmitted(true);
       toast({
-        title: "Error submitting appointment",
-        description: "Please try again later.",
+        title: "Appointment requested successfully!",
+        description: "Thank you for booking. You'll receive a confirmation soon.",
+      });
+      
+      // Reset submitted state after 5 seconds
+      setTimeout(() => {
+        setSubmitted(false);
+      }, 5000);
+      
+    } catch (error: any) {
+      console.error("Error booking appointment:", error);
+      toast({
         variant: "destructive",
+        title: "Error booking appointment",
+        description: error.message || "Something went wrong. Please try again.",
       });
-      console.error("Error submitting appointment:", error);
     } finally {
-      setIsSubmitting(false);
+      setSubmitting(false);
     }
+  };
+  
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-brand-600" />
+      </div>
+    );
+  }
+  
+  const bookingInfo = content?.bookingInfo || {
+    title: "Book an Appointment",
+    subtitle: "Schedule a session that works for your calendar and goals.",
+    services: [
+      { id: "personal", name: "Personal Coaching" },
+      { id: "career", name: "Career Development" },
+      { id: "group", name: "Group Workshop" },
+      { id: "consultation", name: "Free Consultation" }
+    ],
+    timeSlots: [
+      "9:00 AM", "10:00 AM", "11:00 AM", "1:00 PM", 
+      "2:00 PM", "3:00 PM", "4:00 PM", "5:00 PM"
+    ]
   };
 
   return (
-    <main>
-      {/* Hero Section */}
-      <section className="bg-brand-50 py-20">
-        <div className="container mx-auto section-padding text-center">
-          <h1 className="text-4xl md:text-5xl font-bold mb-6">Book an Appointment</h1>
-          <p className="text-lg text-gray-700 max-w-3xl mx-auto">
-            Take the first step on your growth journey by scheduling a session with Beza.
-          </p>
-        </div>
-      </section>
-
-      {/* Booking Form Section */}
-      <section className="section-padding py-16">
-        <div className="container mx-auto max-w-3xl">
+    <div className="bg-gradient-to-b from-white to-gray-50">
+      <div className="container max-w-7xl mx-auto px-4 py-16">
+        <h1 className="text-4xl font-bold text-center mb-4">{bookingInfo.title}</h1>
+        <p className="text-gray-600 text-center max-w-2xl mx-auto mb-12">
+          {bookingInfo.subtitle}
+        </p>
+        
+        <div className="max-w-3xl mx-auto">
           <Card>
-            <CardContent className="p-8">
-              <div className="mb-6 flex items-start">
-                <Calendar className="h-8 w-8 text-brand-500 mr-4 mt-1" />
-                <div>
-                  <h2 className="text-2xl font-bold mb-2">Schedule Your Session</h2>
-                  <p className="text-gray-600">
-                    Please fill out the form below to request an appointment. All fields are required.
-                  </p>
+            <CardContent className="p-6 md:p-8">
+              {submitted ? (
+                <div className="bg-green-50 border border-green-200 text-green-800 rounded-lg p-6 text-center">
+                  <h3 className="text-xl font-medium mb-2">Thank You!</h3>
+                  <p>Your appointment request has been submitted successfully. You'll receive a confirmation soon.</p>
                 </div>
-              </div>
-              
-              <form onSubmit={handleSubmit} className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              ) : (
+                <form onSubmit={handleSubmit} className="space-y-6">
+                  {/* Personal Information */}
+                  <div>
+                    <h2 className="text-xl font-semibold mb-4">Personal Information</h2>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="name">Full Name</Label>
+                        <Input 
+                          id="name"
+                          name="name"
+                          value={formData.name}
+                          onChange={handleChange}
+                          className={formErrors.name ? "border-red-500" : ""}
+                        />
+                        {formErrors.name && (
+                          <p className="text-red-500 text-sm">{formErrors.name}</p>
+                        )}
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <Label htmlFor="email">Email Address</Label>
+                        <Input 
+                          id="email"
+                          name="email"
+                          type="email"
+                          value={formData.email}
+                          onChange={handleChange}
+                          className={formErrors.email ? "border-red-500" : ""}
+                        />
+                        {formErrors.email && (
+                          <p className="text-red-500 text-sm">{formErrors.email}</p>
+                        )}
+                      </div>
+                    </div>
+                    
+                    <div className="mt-4 space-y-2">
+                      <Label htmlFor="phone">Phone Number</Label>
+                      <Input 
+                        id="phone"
+                        name="phone"
+                        value={formData.phone}
+                        onChange={handleChange}
+                        className={formErrors.phone ? "border-red-500" : ""}
+                      />
+                      {formErrors.phone && (
+                        <p className="text-red-500 text-sm">{formErrors.phone}</p>
+                      )}
+                    </div>
+                  </div>
+                  
+                  {/* Service Selection */}
+                  <div>
+                    <h2 className="text-xl font-semibold mb-4">Service Type</h2>
+                    <RadioGroup 
+                      value={formData.service_type}
+                      onValueChange={(value) => handleSelectChange("service_type", value)}
+                      className="grid grid-cols-1 md:grid-cols-2 gap-3"
+                    >
+                      {bookingInfo.services.map((service) => (
+                        <div key={service.id} className="space-x-2">
+                          <RadioGroupItem value={service.id} id={service.id} />
+                          <Label htmlFor={service.id}>{service.name}</Label>
+                        </div>
+                      ))}
+                    </RadioGroup>
+                    {formErrors.service_type && (
+                      <p className="text-red-500 text-sm mt-2">{formErrors.service_type}</p>
+                    )}
+                  </div>
+                  
+                  {/* Schedule */}
+                  <div>
+                    <h2 className="text-xl font-semibold mb-4">Schedule</h2>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="space-y-2">
+                        <Label>Date</Label>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button
+                              variant={"outline"}
+                              className={cn(
+                                "w-full justify-start text-left font-normal",
+                                !date && "text-muted-foreground",
+                                formErrors.date && "border-red-500"
+                              )}
+                            >
+                              <CalendarIcon className="mr-2 h-4 w-4" />
+                              {date ? format(date, "PPP") : <span>Select date</span>}
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0">
+                            <Calendar
+                              mode="single"
+                              selected={date}
+                              onSelect={handleDateChange}
+                              initialFocus
+                              disabled={(date) => {
+                                // Disable dates in the past
+                                const today = new Date();
+                                today.setHours(0, 0, 0, 0);
+                                return date < today;
+                              }}
+                            />
+                          </PopoverContent>
+                        </Popover>
+                        {formErrors.date && (
+                          <p className="text-red-500 text-sm">{formErrors.date}</p>
+                        )}
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <Label>Time</Label>
+                        <Select
+                          value={formData.time}
+                          onValueChange={(value) => handleSelectChange("time", value)}
+                        >
+                          <SelectTrigger className={cn(
+                            formErrors.time && "border-red-500"
+                          )}>
+                            <SelectValue placeholder="Select time" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {bookingInfo.timeSlots.map((time) => (
+                              <SelectItem key={time} value={time}>
+                                {time}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        {formErrors.time && (
+                          <p className="text-red-500 text-sm">{formErrors.time}</p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Additional Information */}
                   <div className="space-y-2">
-                    <Label htmlFor="name">Full Name</Label>
-                    <Input
-                      id="name"
-                      placeholder="Your full name"
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      required
+                    <Label htmlFor="message">Additional Information (Optional)</Label>
+                    <Textarea 
+                      id="message"
+                      name="message"
+                      rows={4}
+                      value={formData.message}
+                      onChange={handleChange}
+                      placeholder="Please share any specific concerns or goals you'd like to address in our session."
                     />
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="email">Email Address</Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      placeholder="Your email address"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      required
-                    />
+                  
+                  <div className="pt-2">
+                    <Button 
+                      type="submit" 
+                      className="w-full"
+                      disabled={submitting}
+                    >
+                      {submitting ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Submitting...
+                        </>
+                      ) : (
+                        "Book Appointment"
+                      )}
+                    </Button>
                   </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="phone">Phone Number</Label>
-                  <Input
-                    id="phone"
-                    type="tel"
-                    placeholder="Your phone number"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    required
-                  />
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <Label htmlFor="date">Preferred Date</Label>
-                    <Input
-                      id="date"
-                      type="date"
-                      value={date}
-                      onChange={(e) => setDate(e.target.value)}
-                      required
-                      min={new Date().toISOString().split('T')[0]}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="time">Preferred Time</Label>
-                    <Select value={time} onValueChange={setTime} required>
-                      <SelectTrigger id="time">
-                        <SelectValue placeholder="Select a time" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {availableTimes.map((t) => (
-                          <SelectItem key={t} value={t}>
-                            {t}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="service">Service Type</Label>
-                  <Select value={serviceType} onValueChange={setServiceType} required>
-                    <SelectTrigger id="service">
-                      <SelectValue placeholder="Select a service" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="personal-coaching">Personal Coaching</SelectItem>
-                      <SelectItem value="career-development">Career Development</SelectItem>
-                      <SelectItem value="group-workshop">Group Workshop</SelectItem>
-                      <SelectItem value="initial-consultation">Initial Consultation</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="message">Additional Information</Label>
-                  <Textarea
-                    id="message"
-                    placeholder="Please share any specific topics or questions you'd like to address during our session"
-                    rows={4}
-                    value={message}
-                    onChange={(e) => setMessage(e.target.value)}
-                  />
-                </div>
-
-                <div className="pt-4">
-                  <Button 
-                    type="submit" 
-                    className="w-full bg-brand-500 hover:bg-brand-600"
-                    disabled={isSubmitting}
-                  >
-                    {isSubmitting ? "Submitting..." : "Request Appointment"}
-                  </Button>
-                </div>
-              </form>
+                </form>
+              )}
             </CardContent>
           </Card>
-
-          <div className="mt-10">
-            <h3 className="text-xl font-semibold mb-4">Important Information</h3>
-            <div className="bg-gray-50 rounded-lg p-5 text-gray-700">
-              <ul className="space-y-3">
-                <li className="flex items-start">
-                  <span className="text-brand-500 mr-2">•</span>
-                  <span>Appointments are confirmed via email within 24 hours.</span>
-                </li>
-                <li className="flex items-start">
-                  <span className="text-brand-500 mr-2">•</span>
-                  <span>Please provide at least 24 hours notice for cancellations.</span>
-                </li>
-                <li className="flex items-start">
-                  <span className="text-brand-500 mr-2">•</span>
-                  <span>Sessions are available both in-person and virtually.</span>
-                </li>
-                <li className="flex items-start">
-                  <span className="text-brand-500 mr-2">•</span>
-                  <span>Initial consultations are 30 minutes and free of charge.</span>
-                </li>
-              </ul>
-            </div>
-          </div>
         </div>
-      </section>
-    </main>
+      </div>
+    </div>
   );
 };
 

@@ -4,6 +4,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Check } from "lucide-react";
+import { updateWebsiteContent, WebsiteSection } from "@/hooks/use-website-content";
 import HomeEditor from "./editors/HomeEditor";
 import ServicesEditor from "./editors/ServicesEditor";
 import TestimonialsEditor from "./editors/TestimonialsEditor";
@@ -18,14 +19,15 @@ const WebsiteCustomizer: React.FC<WebsiteCustomizerProps> = ({ onSave }) => {
   const [saveStatus, setSaveStatus] = useState<{ success: boolean; message: string } | null>(null);
   const [activeTab, setActiveTab] = useState("home");
 
-  const handleSaveChanges = async (section: string, data: any) => {
+  const handleSaveChanges = async (section: WebsiteSection, data: any) => {
     try {
-      // We'll implement the actual save functionality later
-      console.log(`Saving ${section} data:`, data);
+      const success = await updateWebsiteContent(section, data);
       
       setSaveStatus({
-        success: true,
-        message: `${section.charAt(0).toUpperCase() + section.slice(1)} content updated successfully!`
+        success,
+        message: success 
+          ? `${section.charAt(0).toUpperCase() + section.slice(1)} content updated successfully!`
+          : `Error updating ${section} content. Please try again.`
       });
       
       // Clear the status message after 3 seconds
@@ -33,7 +35,7 @@ const WebsiteCustomizer: React.FC<WebsiteCustomizerProps> = ({ onSave }) => {
         setSaveStatus(null);
       }, 3000);
       
-      if (onSave) onSave();
+      if (success && onSave) onSave();
     } catch (error) {
       console.error(`Error saving ${section} data:`, error);
       setSaveStatus({
