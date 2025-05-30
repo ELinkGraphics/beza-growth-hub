@@ -8,6 +8,7 @@ import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import Home from "./pages/Home";
 import About from "./pages/About";
+import Learn from "./pages/Learn";
 import Services from "./pages/Services";
 import Contact from "./pages/Contact";
 import BookAppointment from "./pages/BookAppointment";
@@ -42,6 +43,16 @@ const App = () => {
                 <>
                   <Navbar />
                   <About />
+                  <Footer />
+                </>
+              }
+            />
+            <Route
+              path="/learn"
+              element={
+                <>
+                  <Navbar />
+                  <Learn />
                   <Footer />
                 </>
               }
