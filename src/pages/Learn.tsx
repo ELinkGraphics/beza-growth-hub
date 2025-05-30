@@ -1,12 +1,39 @@
 
-import React from "react";
+import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { Play, Clock, Users, Star, Award } from "lucide-react";
 import { Link } from "react-router-dom";
+import { CourseModal } from "@/components/course/CourseModal";
+import { EnrollmentForm } from "@/components/course/EnrollmentForm";
+import { LessonViewer } from "@/components/course/LessonViewer";
 
 const Learn = () => {
+  const [isCourseModalOpen, setIsCourseModalOpen] = useState(false);
+  const [isEnrollmentFormOpen, setIsEnrollmentFormOpen] = useState(false);
+  const [isLessonViewerOpen, setIsLessonViewerOpen] = useState(false);
+  const [studentData, setStudentData] = useState<{ fullName: string; email: string; phone: string } | null>(null);
+
+  const handleLearnMore = () => {
+    setIsCourseModalOpen(true);
+  };
+
+  const handleEnrollFromModal = () => {
+    setIsCourseModalOpen(false);
+    setIsEnrollmentFormOpen(true);
+  };
+
+  const handleDirectEnroll = () => {
+    setIsEnrollmentFormOpen(true);
+  };
+
+  const handleEnrollmentSubmit = (data: { fullName: string; email: string; phone: string }) => {
+    setStudentData(data);
+    setIsEnrollmentFormOpen(false);
+    setIsLessonViewerOpen(true);
+  };
+
   return (
     <div className="min-h-screen">
       {/* Full Page Welcome Video Hero Section */}
@@ -189,10 +216,17 @@ const Learn = () => {
                         </div>
                       </div>
                       <div className="flex flex-col sm:flex-row gap-4">
-                        <Button className="bg-gradient-to-r from-brand-500 to-brand-600 hover:from-brand-600 hover:to-brand-700 text-white shadow-lg flex-1 h-12 text-lg font-semibold">
+                        <Button 
+                          onClick={handleDirectEnroll}
+                          className="bg-gradient-to-r from-brand-500 to-brand-600 hover:from-brand-600 hover:to-brand-700 text-white shadow-lg flex-1 h-12 text-lg font-semibold"
+                        >
                           Enroll Now - FREE
                         </Button>
-                        <Button variant="outline" className="border-2 border-brand-500 text-brand-600 hover:bg-brand-50 h-12 px-8">
+                        <Button 
+                          variant="outline" 
+                          onClick={handleLearnMore}
+                          className="border-2 border-brand-500 text-brand-600 hover:bg-brand-50 h-12 px-8"
+                        >
                           Learn More
                         </Button>
                       </div>
@@ -234,6 +268,27 @@ const Learn = () => {
           </div>
         </div>
       </section>
+
+      {/* Modals */}
+      <CourseModal 
+        isOpen={isCourseModalOpen} 
+        onClose={() => setIsCourseModalOpen(false)}
+        onEnroll={handleEnrollFromModal}
+      />
+      
+      <EnrollmentForm 
+        isOpen={isEnrollmentFormOpen}
+        onClose={() => setIsEnrollmentFormOpen(false)}
+        onSubmit={handleEnrollmentSubmit}
+      />
+      
+      {studentData && (
+        <LessonViewer 
+          isOpen={isLessonViewerOpen}
+          onClose={() => setIsLessonViewerOpen(false)}
+          studentName={studentData.fullName}
+        />
+      )}
     </div>
   );
 };
