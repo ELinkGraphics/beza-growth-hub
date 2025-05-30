@@ -3,7 +3,7 @@ import React from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
-import { Play, Clock, Users, Star } from "lucide-react";
+import { Play, Clock, Users, Star, Award } from "lucide-react";
 import { Link } from "react-router-dom";
 
 const Learn = () => {
@@ -58,7 +58,7 @@ const Learn = () => {
       </section>
 
       {/* Course Section */}
-      <section className="py-20 bg-white">
+      <section className="py-20 bg-gradient-to-b from-gray-50 to-white">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold text-gray-800 mb-4">Featured Course</h2>
@@ -67,107 +67,146 @@ const Learn = () => {
             </p>
           </div>
           
-          {/* Course Card */}
-          <div className="max-w-4xl mx-auto">
-            <Card className="overflow-hidden shadow-2xl hover:shadow-3xl transition-all duration-300">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-0">
-                {/* Course Image */}
-                <div className="relative">
-                  <AspectRatio ratio={16 / 12}>
-                    <img 
-                      src="https://images.unsplash.com/photo-1649972904349-6e44c42644a7?auto=format&fit=crop&w=800&q=80" 
-                      alt="Fundamentals of Personal Branding" 
-                      className="object-cover w-full h-full"
-                    />
-                  </AspectRatio>
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
-                  <div className="absolute bottom-4 left-4 text-white">
-                    <span className="bg-brand-500 px-3 py-1 rounded-full text-sm font-medium">
-                      Featured Course
-                    </span>
+          {/* Premium Course Card */}
+          <div className="max-w-6xl mx-auto">
+            <Card className="overflow-hidden shadow-xl hover:shadow-2xl transition-all duration-500 border-0 bg-gradient-to-br from-white to-gray-50">
+              <div className="relative">
+                {/* Premium Badge */}
+                <div className="absolute top-6 right-6 z-20">
+                  <div className="flex items-center gap-2 bg-gradient-to-r from-amber-400 to-orange-500 text-white px-4 py-2 rounded-full shadow-lg">
+                    <Award className="h-4 w-4" />
+                    <span className="text-sm font-semibold">Premium Course</span>
                   </div>
                 </div>
                 
-                {/* Course Details */}
-                <CardContent className="p-8 flex flex-col justify-between">
-                  <div>
-                    <h3 className="text-3xl font-bold text-gray-800 mb-4">
-                      Fundamentals of Personal Branding
-                    </h3>
-                    <p className="text-gray-600 mb-6 leading-relaxed">
-                      Learn how to build a powerful personal brand that opens doors to new opportunities. 
-                      This comprehensive course covers everything from defining your unique value proposition 
-                      to building an authentic online presence that resonates with your target audience.
-                    </p>
-                    
-                    {/* Course Stats */}
-                    <div className="grid grid-cols-3 gap-4 mb-6">
-                      <div className="text-center">
-                        <div className="flex items-center justify-center mb-2">
-                          <Clock className="h-5 w-5 text-brand-500" />
-                        </div>
-                        <p className="text-sm text-gray-500">8 Hours</p>
-                        <p className="font-semibold">Duration</p>
-                      </div>
-                      <div className="text-center">
-                        <div className="flex items-center justify-center mb-2">
-                          <Users className="h-5 w-5 text-brand-500" />
-                        </div>
-                        <p className="text-sm text-gray-500">1,200+</p>
-                        <p className="font-semibold">Students</p>
-                      </div>
-                      <div className="text-center">
-                        <div className="flex items-center justify-center mb-2">
-                          <Star className="h-5 w-5 text-brand-500" />
-                        </div>
-                        <p className="text-sm text-gray-500">4.9/5</p>
-                        <p className="font-semibold">Rating</p>
-                      </div>
-                    </div>
-                    
-                    {/* What You'll Learn */}
-                    <div className="mb-6">
-                      <h4 className="font-semibold text-gray-800 mb-3">What You'll Learn:</h4>
-                      <ul className="space-y-2 text-gray-600">
-                        <li className="flex items-start">
-                          <span className="w-2 h-2 bg-brand-500 rounded-full mt-2 mr-3 flex-shrink-0"></span>
-                          Define your unique value proposition and brand identity
-                        </li>
-                        <li className="flex items-start">
-                          <span className="w-2 h-2 bg-brand-500 rounded-full mt-2 mr-3 flex-shrink-0"></span>
-                          Create compelling content that showcases your expertise
-                        </li>
-                        <li className="flex items-start">
-                          <span className="w-2 h-2 bg-brand-500 rounded-full mt-2 mr-3 flex-shrink-0"></span>
-                          Build authentic relationships and network effectively
-                        </li>
-                        <li className="flex items-start">
-                          <span className="w-2 h-2 bg-brand-500 rounded-full mt-2 mr-3 flex-shrink-0"></span>
-                          Leverage social media for professional growth
-                        </li>
-                      </ul>
+                <div className="grid grid-cols-1 lg:grid-cols-5 gap-0">
+                  {/* Course Image */}
+                  <div className="lg:col-span-2 relative">
+                    <AspectRatio ratio={16 / 12}>
+                      <img 
+                        src="https://images.unsplash.com/photo-1649972904349-6e44c42644a7?auto=format&fit=crop&w=800&q=80" 
+                        alt="Fundamentals of Personal Branding" 
+                        className="object-cover w-full h-full"
+                      />
+                    </AspectRatio>
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent"></div>
+                    <div className="absolute bottom-6 left-6 text-white">
+                      <span className="bg-brand-500/90 backdrop-blur-sm px-4 py-2 rounded-full text-sm font-medium border border-white/20">
+                        Most Popular
+                      </span>
                     </div>
                   </div>
                   
-                  {/* Course Actions */}
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <span className="text-3xl font-bold text-brand-600">$297</span>
-                      <span className="text-gray-500 line-through">$497</span>
+                  {/* Course Details */}
+                  <CardContent className="lg:col-span-3 p-8 lg:p-10 flex flex-col justify-between">
+                    <div>
+                      <div className="flex items-start justify-between mb-6">
+                        <div>
+                          <h3 className="text-3xl lg:text-4xl font-bold text-gray-800 mb-3">
+                            Fundamentals of Personal Branding
+                          </h3>
+                          <p className="text-gray-600 text-lg leading-relaxed mb-6">
+                            Learn how to build a powerful personal brand that opens doors to new opportunities. 
+                            This comprehensive course covers everything from defining your unique value proposition 
+                            to building an authentic online presence.
+                          </p>
+                        </div>
+                      </div>
+                      
+                      {/* Course Stats */}
+                      <div className="grid grid-cols-3 gap-6 mb-8">
+                        <div className="text-center p-4 bg-white rounded-xl shadow-sm border border-gray-100">
+                          <div className="flex items-center justify-center mb-3">
+                            <div className="p-2 bg-brand-100 rounded-lg">
+                              <Clock className="h-6 w-6 text-brand-600" />
+                            </div>
+                          </div>
+                          <p className="text-2xl font-bold text-gray-800">8</p>
+                          <p className="text-sm text-gray-500">Hours</p>
+                        </div>
+                        <div className="text-center p-4 bg-white rounded-xl shadow-sm border border-gray-100">
+                          <div className="flex items-center justify-center mb-3">
+                            <div className="p-2 bg-brand-100 rounded-lg">
+                              <Users className="h-6 w-6 text-brand-600" />
+                            </div>
+                          </div>
+                          <p className="text-2xl font-bold text-gray-800">1,200+</p>
+                          <p className="text-sm text-gray-500">Students</p>
+                        </div>
+                        <div className="text-center p-4 bg-white rounded-xl shadow-sm border border-gray-100">
+                          <div className="flex items-center justify-center mb-3">
+                            <div className="p-2 bg-brand-100 rounded-lg">
+                              <Star className="h-6 w-6 text-brand-600" />
+                            </div>
+                          </div>
+                          <p className="text-2xl font-bold text-gray-800">4.9</p>
+                          <p className="text-sm text-gray-500">Rating</p>
+                        </div>
+                      </div>
+                      
+                      {/* What You'll Learn */}
+                      <div className="mb-8">
+                        <h4 className="text-xl font-semibold text-gray-800 mb-4">What You'll Learn:</h4>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                          <div className="flex items-start gap-3">
+                            <div className="w-6 h-6 bg-brand-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                              <div className="w-2 h-2 bg-white rounded-full"></div>
+                            </div>
+                            <span className="text-gray-700">Define your unique value proposition</span>
+                          </div>
+                          <div className="flex items-start gap-3">
+                            <div className="w-6 h-6 bg-brand-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                              <div className="w-2 h-2 bg-white rounded-full"></div>
+                            </div>
+                            <span className="text-gray-700">Create compelling content</span>
+                          </div>
+                          <div className="flex items-start gap-3">
+                            <div className="w-6 h-6 bg-brand-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                              <div className="w-2 h-2 bg-white rounded-full"></div>
+                            </div>
+                            <span className="text-gray-700">Build authentic relationships</span>
+                          </div>
+                          <div className="flex items-start gap-3">
+                            <div className="w-6 h-6 bg-brand-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                              <div className="w-2 h-2 bg-white rounded-full"></div>
+                            </div>
+                            <span className="text-gray-700">Leverage social media effectively</span>
+                          </div>
+                        </div>
+                      </div>
                     </div>
-                    <div className="flex flex-col sm:flex-row gap-3">
-                      <Button className="bg-brand-500 hover:bg-brand-600 flex-1">
-                        Enroll Now
-                      </Button>
-                      <Button variant="outline" className="border-brand-500 text-brand-500 hover:bg-brand-50">
-                        Learn More
-                      </Button>
+                    
+                    {/* Course Actions */}
+                    <div className="space-y-6">
+                      <div className="flex items-center justify-between p-6 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl border border-green-200">
+                        <div>
+                          <span className="text-4xl font-bold text-green-600">FREE</span>
+                          <p className="text-green-700 font-medium">Limited Time Offer</p>
+                        </div>
+                        <div className="text-right">
+                          <span className="text-gray-500 line-through text-lg">$297</span>
+                          <p className="text-sm text-green-600 font-medium">Save $297</p>
+                        </div>
+                      </div>
+                      <div className="flex flex-col sm:flex-row gap-4">
+                        <Button className="bg-gradient-to-r from-brand-500 to-brand-600 hover:from-brand-600 hover:to-brand-700 text-white shadow-lg flex-1 h-12 text-lg font-semibold">
+                          Enroll Now - FREE
+                        </Button>
+                        <Button variant="outline" className="border-2 border-brand-500 text-brand-600 hover:bg-brand-50 h-12 px-8">
+                          Learn More
+                        </Button>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-sm text-gray-500 flex items-center justify-center gap-2">
+                          <span className="w-4 h-4 bg-green-500 rounded-full flex items-center justify-center">
+                            <span className="w-2 h-2 bg-white rounded-full"></span>
+                          </span>
+                          30-day money-back guarantee
+                        </p>
+                      </div>
                     </div>
-                    <p className="text-sm text-gray-500 text-center">
-                      30-day money-back guarantee
-                    </p>
-                  </div>
-                </CardContent>
+                  </CardContent>
+                </div>
               </div>
             </Card>
           </div>
