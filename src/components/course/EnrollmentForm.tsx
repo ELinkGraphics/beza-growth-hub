@@ -1,15 +1,16 @@
-
 import React, { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { User, Mail, Phone } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/components/ui/use-toast";
 
 interface EnrollmentFormProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (data: { fullName: string; email: string; phone: string }) => void;
+  onSubmit: (data: { fullName: string; email: string; phone: string; enrollmentId: string }) => void;
 }
 
 export const EnrollmentForm = ({ isOpen, onClose, onSubmit }: EnrollmentFormProps) => {
@@ -18,11 +19,50 @@ export const EnrollmentForm = ({ isOpen, onClose, onSubmit }: EnrollmentFormProp
     email: '',
     phone: ''
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { toast } = useToast();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (formData.fullName && formData.email && formData.phone) {
-      onSubmit(formData);
+      setIsSubmitting(true);
+      
+      try {
+        // Insert enrollment into Supabase
+        const { data, error } = await supabase
+          .from('course_enrollments')
+          .insert({
+            student_name: formData.fullName,
+            email: formData.email,
+            phone: formData.phone,
+            course_id: 'personal-branding-fundamentals'
+          })
+          .select()
+          .single();
+
+        if (error) {
+          throw error;
+        }
+
+        toast({
+          title: "Enrollment Successful!",
+          description: "Welcome to the course. Let's start learning!",
+        });
+
+        onSubmit({
+          ...formData,
+          enrollmentId: data.id
+        });
+      } catch (error) {
+        console.error('Error enrolling student:', error);
+        toast({
+          title: "Enrollment Failed",
+          description: "Please try again or contact support.",
+          variant: "destructive",
+        });
+      } finally {
+        setIsSubmitting(false);
+      }
     }
   };
 
@@ -104,9 +144,9 @@ export const EnrollmentForm = ({ isOpen, onClose, onSubmit }: EnrollmentFormProp
           <Button
             type="submit"
             className="w-full bg-gradient-to-r from-brand-500 to-brand-600 hover:from-brand-600 hover:to-brand-700 text-white h-12 text-lg font-semibold"
-            disabled={!formData.fullName || !formData.email || !formData.phone}
+            disabled={!formData.fullName || !formData.email || !formData.phone || isSubmitting}
           >
-            Start Learning Now
+            {isSubmitting ? "Enrolling..." : "Start Learning Now"}
           </Button>
 
           <div className="text-center text-xs text-gray-500">

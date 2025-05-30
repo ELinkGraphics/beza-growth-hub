@@ -1,12 +1,12 @@
-
 import React, { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Calendar, Mail, ArrowLeft, Book, User, Settings } from "lucide-react";
+import { Calendar, Mail, ArrowLeft, Book, User, Settings, GraduationCap } from "lucide-react";
 import { AppointmentsList } from "./AppointmentsList";
 import { ContactsList } from "./ContactsList";
+import { CourseManagement } from "@/components/admin/CourseManagement";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 import WebsiteCustomizer from "@/components/admin/WebsiteCustomizer";
@@ -20,7 +20,8 @@ const AdminDashboard = () => {
     totalAppointments: 0,
     pendingAppointments: 0,
     totalContacts: 0,
-    newContacts: 0
+    newContacts: 0,
+    totalEnrollments: 0
   });
   const { toast } = useToast();
   
@@ -37,19 +38,21 @@ const AdminDashboard = () => {
         
         setIsAuthenticated(true);
         
-        // Fetch stats from Supabase
-        const [appointmentsRes, pendingAppointmentsRes, contactsRes, newContactsRes] = await Promise.all([
+        // Fetch stats from Supabase including course enrollments
+        const [appointmentsRes, pendingAppointmentsRes, contactsRes, newContactsRes, enrollmentsRes] = await Promise.all([
           supabase.from("appointments").select("*", { count: 'exact', head: true }),
           supabase.from("appointments").select("*", { count: 'exact', head: true }).eq("status", "pending"),
           supabase.from("contacts").select("*", { count: 'exact', head: true }),
           supabase.from("contacts").select("*", { count: 'exact', head: true }).eq("is_read", false),
+          supabase.from("course_enrollments").select("*", { count: 'exact', head: true }),
         ]);
         
         setStats({
           totalAppointments: appointmentsRes.count || 0,
           pendingAppointments: pendingAppointmentsRes.count || 0,
           totalContacts: contactsRes.count || 0,
-          newContacts: newContactsRes.count || 0
+          newContacts: newContactsRes.count || 0,
+          totalEnrollments: enrollmentsRes.count || 0
         });
       } catch (error) {
         console.error("Error checking authentication:", error);
@@ -135,7 +138,7 @@ const AdminDashboard = () => {
         <h1 className="text-3xl font-bold mb-6">Admin Dashboard</h1>
         
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-6 mb-8">
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-gray-500">
@@ -191,6 +194,20 @@ const AdminDashboard = () => {
               </div>
             </CardContent>
           </Card>
+
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-gray-500">
+                Course Enrollments
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center">
+                <GraduationCap className="h-5 w-5 text-green-500 mr-2" />
+                <span className="text-3xl font-bold">{stats.totalEnrollments}</span>
+              </div>
+            </CardContent>
+          </Card>
         </div>
         
         {/* Tabs for different data */}
@@ -208,6 +225,10 @@ const AdminDashboard = () => {
               <Mail className="h-4 w-4 mr-2" />
               Contact Messages
             </TabsTrigger>
+            <TabsTrigger value="courses" className="text-base">
+              <GraduationCap className="h-4 w-4 mr-2" />
+              Course Management
+            </TabsTrigger>
             <TabsTrigger value="website" className="text-base">
               <Settings className="h-4 w-4 mr-2" />
               Website Customization
@@ -220,6 +241,10 @@ const AdminDashboard = () => {
           
           <TabsContent value="contacts">
             <ContactsList />
+          </TabsContent>
+          
+          <TabsContent value="courses">
+            <CourseManagement />
           </TabsContent>
           
           <TabsContent value="website">

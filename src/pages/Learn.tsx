@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -13,7 +12,7 @@ const Learn = () => {
   const [isCourseModalOpen, setIsCourseModalOpen] = useState(false);
   const [isEnrollmentFormOpen, setIsEnrollmentFormOpen] = useState(false);
   const [isLessonViewerOpen, setIsLessonViewerOpen] = useState(false);
-  const [studentData, setStudentData] = useState<{ fullName: string; email: string; phone: string } | null>(null);
+  const [studentData, setStudentData] = useState<{ fullName: string; email: string; phone: string; enrollmentId: string } | null>(null);
 
   const handleLearnMore = () => {
     setIsCourseModalOpen(true);
@@ -28,7 +27,7 @@ const Learn = () => {
     setIsEnrollmentFormOpen(true);
   };
 
-  const handleEnrollmentSubmit = (data: { fullName: string; email: string; phone: string }) => {
+  const handleEnrollmentSubmit = (data: { fullName: string; email: string; phone: string; enrollmentId: string }) => {
     setStudentData(data);
     setIsEnrollmentFormOpen(false);
     setIsLessonViewerOpen(true);
@@ -287,6 +286,7 @@ const Learn = () => {
           isOpen={isLessonViewerOpen}
           onClose={() => setIsLessonViewerOpen(false)}
           studentName={studentData.fullName}
+          enrollmentId={studentData.enrollmentId}
         />
       )}
     </div>
