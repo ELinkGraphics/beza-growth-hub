@@ -39,6 +39,7 @@ export const CourseManagement = () => {
   const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
   const [editingLesson, setEditingLesson] = useState<CourseContent | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [stats, setStats] = useState({
     totalEnrollments: 0,
     completedCourses: 0,
@@ -47,19 +48,48 @@ export const CourseManagement = () => {
   const { toast } = useToast();
 
   useEffect(() => {
-    fetchCourseContent();
-    fetchEnrollments();
-    fetchStats();
+    checkAuthAndFetchData();
+    setupRealtimeSubscriptions();
+  }, []);
 
+  const checkAuthAndFetchData = async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        toast({
+          title: "Authentication Required",
+          description: "Please sign in to access course management.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      await Promise.all([
+        fetchCourseContent(),
+        fetchEnrollments(),
+        fetchStats()
+      ]);
+    } catch (error) {
+      console.error('Error checking auth and fetching data:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load data. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const setupRealtimeSubscriptions = () => {
     // Set up real-time subscriptions for course content
     const courseContentChannel = supabase
-      .channel('course-content-changes')
+      .channel('course-content-admin')
       .on('postgres_changes', { 
         event: '*', 
         schema: 'public', 
         table: 'course_content' 
       }, (payload) => {
-        console.log('Course content changed:', payload);
+        console.log('Course content changed in admin:', payload);
         fetchCourseContent();
         fetchStats();
       })
@@ -67,13 +97,13 @@ export const CourseManagement = () => {
 
     // Set up real-time subscriptions for enrollments
     const enrollmentsChannel = supabase
-      .channel('enrollments-changes')
+      .channel('enrollments-admin')
       .on('postgres_changes', { 
         event: '*', 
         schema: 'public', 
         table: 'course_enrollments' 
       }, (payload) => {
-        console.log('Enrollments changed:', payload);
+        console.log('Enrollments changed in admin:', payload);
         fetchEnrollments();
         fetchStats();
       })
@@ -83,10 +113,11 @@ export const CourseManagement = () => {
       supabase.removeChannel(courseContentChannel);
       supabase.removeChannel(enrollmentsChannel);
     };
-  }, []);
+  };
 
   const fetchCourseContent = async () => {
     try {
+      setLoading(true);
       const { data, error } = await supabase
         .from('course_content')
         .select('*')
@@ -97,7 +128,7 @@ export const CourseManagement = () => {
         throw error;
       }
       
-      console.log('Fetched course content:', data);
+      console.log('Fetched course content for admin:', data);
       setCourseContent(data || []);
     } catch (error) {
       console.error('Error fetching course content:', error);
@@ -106,6 +137,8 @@ export const CourseManagement = () => {
         description: "Failed to load course content.",
         variant: "destructive",
       });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -121,7 +154,7 @@ export const CourseManagement = () => {
         throw error;
       }
       
-      console.log('Fetched enrollments:', data);
+      console.log('Fetched enrollments for admin:', data);
       setEnrollments(data || []);
     } catch (error) {
       console.error('Error fetching enrollments:', error);
@@ -153,7 +186,14 @@ export const CourseManagement = () => {
 
   const handleSaveLesson = async (lessonData: Partial<CourseContent>) => {
     try {
+      setLoading(true);
       console.log('Saving lesson data:', lessonData);
+      
+      // Check if user is authenticated
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error('User not authenticated');
+      }
       
       if (editingLesson) {
         // Update existing lesson
@@ -178,10 +218,10 @@ export const CourseManagement = () => {
         console.log('Updated lesson:', data);
         toast({ title: "Success", description: "Lesson updated successfully." });
       } else {
-        // Create new lesson - get the next order index
+        // Create new lesson - get the next order index and lesson_id
         const { data: maxOrderData, error: maxOrderError } = await supabase
           .from('course_content')
-          .select('order_index')
+          .select('order_index, lesson_id')
           .order('order_index', { ascending: false })
           .limit(1);
 
@@ -191,12 +231,14 @@ export const CourseManagement = () => {
         }
 
         const maxOrderIndex = maxOrderData && maxOrderData.length > 0 ? maxOrderData[0].order_index : 0;
+        const maxLessonId = maxOrderData && maxOrderData.length > 0 ? maxOrderData[0].lesson_id : 0;
         const nextOrderIndex = maxOrderIndex + 1;
+        const nextLessonId = maxLessonId + 1;
 
         const { data, error } = await supabase
           .from('course_content')
           .insert({
-            lesson_id: nextOrderIndex,
+            lesson_id: nextLessonId,
             title: lessonData.title!,
             video_url: lessonData.video_url!,
             duration: lessonData.duration!,
@@ -222,9 +264,11 @@ export const CourseManagement = () => {
       console.error('Error saving lesson:', error);
       toast({
         title: "Error",
-        description: "Failed to save lesson. Please try again.",
+        description: error instanceof Error ? error.message : "Failed to save lesson. Please try again.",
         variant: "destructive",
       });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -234,7 +278,14 @@ export const CourseManagement = () => {
     }
     
     try {
+      setLoading(true);
       console.log('Deleting lesson:', lessonId);
+      
+      // Check if user is authenticated
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error('User not authenticated');
+      }
       
       const { error } = await supabase
         .from('course_content')
@@ -252,9 +303,11 @@ export const CourseManagement = () => {
       console.error('Error deleting lesson:', error);
       toast({
         title: "Error",
-        description: "Failed to delete lesson. Please try again.",
+        description: error instanceof Error ? error.message : "Failed to delete lesson. Please try again.",
         variant: "destructive",
       });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -290,6 +343,11 @@ Grow with Beza
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
+
+    toast({
+      title: "Certificate Downloaded",
+      description: `Certificate for ${enrollment.student_name} has been downloaded.`,
+    });
   };
 
   const viewCertificate = (enrollment: Enrollment) => {
@@ -308,12 +366,53 @@ Congratulations on your achievement!
 Grow with Beza
     `;
 
-    alert(certificateContent);
+    // Create a modal-like dialog for viewing the certificate
+    const newWindow = window.open('', '_blank', 'width=600,height=800');
+    if (newWindow) {
+      newWindow.document.write(`
+        <html>
+          <head>
+            <title>Certificate - ${enrollment.student_name}</title>
+            <style>
+              body { font-family: Arial, sans-serif; padding: 40px; text-align: center; }
+              .certificate { border: 3px solid #333; padding: 40px; margin: 20px; }
+              h1 { color: #333; margin-bottom: 30px; }
+              .student-name { font-size: 24px; font-weight: bold; color: #0066cc; margin: 20px 0; }
+              .course-name { font-size: 20px; font-weight: bold; margin: 20px 0; }
+            </style>
+          </head>
+          <body>
+            <div class="certificate">
+              <h1>CERTIFICATE OF COMPLETION</h1>
+              <p>This is to certify that</p>
+              <div class="student-name">${enrollment.student_name}</div>
+              <p>has successfully completed the</p>
+              <div class="course-name">Personal Branding Fundamentals Course</div>
+              <p>Date of Completion: ${enrollment.completed_at ? new Date(enrollment.completed_at).toLocaleDateString() : new Date().toLocaleDateString()}</p>
+              <p>Email: ${enrollment.email}</p>
+              <p>Phone: ${enrollment.phone}</p>
+              <br>
+              <p>Congratulations on your achievement!</p>
+              <br>
+              <p><strong>Grow with Beza</strong></p>
+            </div>
+          </body>
+        </html>
+      `);
+      newWindow.document.close();
+    }
   };
 
   const markAsCompleted = async (enrollmentId: string) => {
     try {
+      setLoading(true);
       console.log('Marking enrollment as completed:', enrollmentId);
+      
+      // Check if user is authenticated
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error('User not authenticated');
+      }
       
       const { data, error } = await supabase
         .from('course_enrollments')
@@ -335,9 +434,11 @@ Grow with Beza
       console.error('Error marking as completed:', error);
       toast({
         title: "Error",
-        description: "Failed to mark as completed. Please try again.",
+        description: error instanceof Error ? error.message : "Failed to mark as completed. Please try again.",
         variant: "destructive",
       });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -393,7 +494,10 @@ Grow with Beza
             <h2 className="text-2xl font-bold">Course Content Management</h2>
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
               <DialogTrigger asChild>
-                <Button onClick={() => setEditingLesson(null)}>
+                <Button 
+                  onClick={() => setEditingLesson(null)}
+                  disabled={loading}
+                >
                   <Plus className="h-4 w-4 mr-2" />
                   Add Lesson
                 </Button>
@@ -402,12 +506,19 @@ Grow with Beza
                 lesson={editingLesson}
                 onSave={handleSaveLesson}
                 onClose={() => setIsDialogOpen(false)}
+                loading={loading}
               />
             </Dialog>
           </div>
           
           <div className="space-y-4">
-            {courseContent.length === 0 ? (
+            {loading && courseContent.length === 0 ? (
+              <Card>
+                <CardContent className="p-6 text-center">
+                  <p className="text-gray-500">Loading lessons...</p>
+                </CardContent>
+              </Card>
+            ) : courseContent.length === 0 ? (
               <Card>
                 <CardContent className="p-6 text-center">
                   <p className="text-gray-500">No lessons found. Add your first lesson to get started.</p>
@@ -440,6 +551,7 @@ Grow with Beza
                             setEditingLesson(lesson);
                             setIsDialogOpen(true);
                           }}
+                          disabled={loading}
                         >
                           <Edit className="h-4 w-4" />
                         </Button>
@@ -447,6 +559,7 @@ Grow with Beza
                           variant="outline"
                           size="sm"
                           onClick={() => handleDeleteLesson(lesson.id)}
+                          disabled={loading}
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
@@ -499,6 +612,7 @@ Grow with Beza
                               variant="outline"
                               size="sm"
                               onClick={() => markAsCompleted(enrollment.id)}
+                              disabled={loading}
                             >
                               Mark Complete
                             </Button>
@@ -541,9 +655,10 @@ interface LessonDialogProps {
   lesson: CourseContent | null;
   onSave: (lesson: Partial<CourseContent>) => void;
   onClose: () => void;
+  loading: boolean;
 }
 
-const LessonDialog = ({ lesson, onSave, onClose }: LessonDialogProps) => {
+const LessonDialog = ({ lesson, onSave, onClose, loading }: LessonDialogProps) => {
   const [formData, setFormData] = useState({
     title: lesson?.title || '',
     video_url: lesson?.video_url || '',
@@ -586,6 +701,7 @@ const LessonDialog = ({ lesson, onSave, onClose }: LessonDialogProps) => {
             onChange={(e) => setFormData({ ...formData, title: e.target.value })}
             placeholder="Enter lesson title"
             required
+            disabled={loading}
           />
         </div>
         
@@ -597,6 +713,7 @@ const LessonDialog = ({ lesson, onSave, onClose }: LessonDialogProps) => {
             onChange={(e) => setFormData({ ...formData, video_url: e.target.value })}
             placeholder="https://www.youtube.com/embed/..."
             required
+            disabled={loading}
           />
         </div>
         
@@ -608,6 +725,7 @@ const LessonDialog = ({ lesson, onSave, onClose }: LessonDialogProps) => {
             onChange={(e) => setFormData({ ...formData, duration: e.target.value })}
             placeholder="e.g., 45 min"
             required
+            disabled={loading}
           />
         </div>
         
@@ -619,6 +737,7 @@ const LessonDialog = ({ lesson, onSave, onClose }: LessonDialogProps) => {
             onChange={(e) => setFormData({ ...formData, description: e.target.value })}
             placeholder="Enter lesson description"
             rows={3}
+            disabled={loading}
           />
         </div>
         
@@ -628,16 +747,17 @@ const LessonDialog = ({ lesson, onSave, onClose }: LessonDialogProps) => {
             id="is_active"
             checked={formData.is_active}
             onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
+            disabled={loading}
           />
           <Label htmlFor="is_active">Active (visible to students)</Label>
         </div>
         
         <div className="flex justify-end space-x-2 pt-4">
-          <Button type="button" variant="outline" onClick={onClose}>
+          <Button type="button" variant="outline" onClick={onClose} disabled={loading}>
             Cancel
           </Button>
-          <Button type="submit">
-            {lesson ? 'Update' : 'Create'} Lesson
+          <Button type="submit" disabled={loading}>
+            {loading ? 'Saving...' : (lesson ? 'Update' : 'Create')} Lesson
           </Button>
         </div>
       </form>
