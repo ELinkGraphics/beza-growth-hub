@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Play, Plus, Edit, Trash2, Users, Award, Clock, Download, Eye } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 
 interface CourseContent {
   id: string;
@@ -51,18 +51,29 @@ export const CourseManagement = () => {
     fetchEnrollments();
     fetchStats();
 
-    // Set up real-time subscriptions
+    // Set up real-time subscriptions for course content
     const courseContentChannel = supabase
       .channel('course-content-changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'course_content' }, () => {
+      .on('postgres_changes', { 
+        event: '*', 
+        schema: 'public', 
+        table: 'course_content' 
+      }, (payload) => {
+        console.log('Course content changed:', payload);
         fetchCourseContent();
         fetchStats();
       })
       .subscribe();
 
+    // Set up real-time subscriptions for enrollments
     const enrollmentsChannel = supabase
       .channel('enrollments-changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'course_enrollments' }, () => {
+      .on('postgres_changes', { 
+        event: '*', 
+        schema: 'public', 
+        table: 'course_enrollments' 
+      }, (payload) => {
+        console.log('Enrollments changed:', payload);
         fetchEnrollments();
         fetchStats();
       })
@@ -81,7 +92,12 @@ export const CourseManagement = () => {
         .select('*')
         .order('order_index');
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching course content:', error);
+        throw error;
+      }
+      
+      console.log('Fetched course content:', data);
       setCourseContent(data || []);
     } catch (error) {
       console.error('Error fetching course content:', error);
@@ -100,10 +116,20 @@ export const CourseManagement = () => {
         .select('*')
         .order('enrolled_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching enrollments:', error);
+        throw error;
+      }
+      
+      console.log('Fetched enrollments:', data);
       setEnrollments(data || []);
     } catch (error) {
       console.error('Error fetching enrollments:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load enrollments.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -127,9 +153,11 @@ export const CourseManagement = () => {
 
   const handleSaveLesson = async (lessonData: Partial<CourseContent>) => {
     try {
+      console.log('Saving lesson data:', lessonData);
+      
       if (editingLesson) {
         // Update existing lesson
-        const { error } = await supabase
+        const { data, error } = await supabase
           .from('course_content')
           .update({
             title: lessonData.title,
@@ -139,26 +167,52 @@ export const CourseManagement = () => {
             is_active: lessonData.is_active,
             updated_at: new Date().toISOString()
           })
-          .eq('id', editingLesson.id);
+          .eq('id', editingLesson.id)
+          .select();
 
-        if (error) throw error;
+        if (error) {
+          console.error('Error updating lesson:', error);
+          throw error;
+        }
+        
+        console.log('Updated lesson:', data);
         toast({ title: "Success", description: "Lesson updated successfully." });
       } else {
-        // Create new lesson
-        const maxOrderIndex = Math.max(...courseContent.map(c => c.order_index), 0);
-        const { error } = await supabase
+        // Create new lesson - get the next order index
+        const { data: maxOrderData, error: maxOrderError } = await supabase
+          .from('course_content')
+          .select('order_index')
+          .order('order_index', { ascending: false })
+          .limit(1);
+
+        if (maxOrderError) {
+          console.error('Error getting max order index:', maxOrderError);
+          throw maxOrderError;
+        }
+
+        const maxOrderIndex = maxOrderData && maxOrderData.length > 0 ? maxOrderData[0].order_index : 0;
+        const nextOrderIndex = maxOrderIndex + 1;
+
+        const { data, error } = await supabase
           .from('course_content')
           .insert({
-            lesson_id: maxOrderIndex + 1,
+            lesson_id: nextOrderIndex,
             title: lessonData.title!,
             video_url: lessonData.video_url!,
             duration: lessonData.duration!,
-            description: lessonData.description,
-            order_index: maxOrderIndex + 1,
-            is_active: lessonData.is_active ?? true
-          });
+            description: lessonData.description || '',
+            order_index: nextOrderIndex,
+            is_active: lessonData.is_active ?? true,
+            course_id: 'personal-branding-fundamentals'
+          })
+          .select();
 
-        if (error) throw error;
+        if (error) {
+          console.error('Error creating lesson:', error);
+          throw error;
+        }
+        
+        console.log('Created lesson:', data);
         toast({ title: "Success", description: "Lesson created successfully." });
       }
 
@@ -168,36 +222,43 @@ export const CourseManagement = () => {
       console.error('Error saving lesson:', error);
       toast({
         title: "Error",
-        description: "Failed to save lesson.",
+        description: "Failed to save lesson. Please try again.",
         variant: "destructive",
       });
     }
   };
 
   const handleDeleteLesson = async (lessonId: string) => {
-    if (!confirm('Are you sure you want to delete this lesson?')) return;
+    if (!confirm('Are you sure you want to delete this lesson? This action cannot be undone.')) {
+      return;
+    }
     
     try {
+      console.log('Deleting lesson:', lessonId);
+      
       const { error } = await supabase
         .from('course_content')
         .delete()
         .eq('id', lessonId);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error deleting lesson:', error);
+        throw error;
+      }
       
+      console.log('Lesson deleted successfully');
       toast({ title: "Success", description: "Lesson deleted successfully." });
     } catch (error) {
       console.error('Error deleting lesson:', error);
       toast({
         title: "Error",
-        description: "Failed to delete lesson.",
+        description: "Failed to delete lesson. Please try again.",
         variant: "destructive",
       });
     }
   };
 
   const generateCertificate = (enrollment: Enrollment) => {
-    // Simple certificate generation - creates a downloadable text file
     const certificateContent = `
 CERTIFICATE OF COMPLETION
 
@@ -252,22 +313,29 @@ Grow with Beza
 
   const markAsCompleted = async (enrollmentId: string) => {
     try {
-      const { error } = await supabase
+      console.log('Marking enrollment as completed:', enrollmentId);
+      
+      const { data, error } = await supabase
         .from('course_enrollments')
         .update({
           completed_at: new Date().toISOString(),
           certificate_generated: true
         })
-        .eq('id', enrollmentId);
+        .eq('id', enrollmentId)
+        .select();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error marking as completed:', error);
+        throw error;
+      }
       
+      console.log('Marked as completed:', data);
       toast({ title: "Success", description: "Student marked as completed." });
     } catch (error) {
       console.error('Error marking as completed:', error);
       toast({
         title: "Error",
-        description: "Failed to mark as completed.",
+        description: "Failed to mark as completed. Please try again.",
         variant: "destructive",
       });
     }
@@ -339,46 +407,55 @@ Grow with Beza
           </div>
           
           <div className="space-y-4">
-            {courseContent.map((lesson) => (
-              <Card key={lesson.id}>
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-4">
-                      <Play className="h-8 w-8 text-brand-500" />
-                      <div>
-                        <h3 className="text-lg font-semibold">{lesson.title}</h3>
-                        <p className="text-gray-600">{lesson.description}</p>
-                        <div className="flex items-center space-x-4 mt-2">
-                          <span className="text-sm text-gray-500">Duration: {lesson.duration}</span>
-                          <Badge variant={lesson.is_active ? "default" : "secondary"}>
-                            {lesson.is_active ? "Active" : "Inactive"}
-                          </Badge>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex space-x-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          setEditingLesson(lesson);
-                          setIsDialogOpen(true);
-                        }}
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleDeleteLesson(lesson.id)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
+            {courseContent.length === 0 ? (
+              <Card>
+                <CardContent className="p-6 text-center">
+                  <p className="text-gray-500">No lessons found. Add your first lesson to get started.</p>
                 </CardContent>
               </Card>
-            ))}
+            ) : (
+              courseContent.map((lesson) => (
+                <Card key={lesson.id}>
+                  <CardContent className="p-6">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-4">
+                        <Play className="h-8 w-8 text-brand-500" />
+                        <div>
+                          <h3 className="text-lg font-semibold">{lesson.title}</h3>
+                          <p className="text-gray-600">{lesson.description}</p>
+                          <div className="flex items-center space-x-4 mt-2">
+                            <span className="text-sm text-gray-500">Duration: {lesson.duration}</span>
+                            <Badge variant={lesson.is_active ? "default" : "secondary"}>
+                              {lesson.is_active ? "Active" : "Inactive"}
+                            </Badge>
+                            <span className="text-sm text-gray-500">Order: {lesson.order_index}</span>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex space-x-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setEditingLesson(lesson);
+                            setIsDialogOpen(true);
+                          }}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleDeleteLesson(lesson.id)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))
+            )}
           </div>
         </TabsContent>
         
@@ -397,52 +474,60 @@ Grow with Beza
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {enrollments.map((enrollment) => (
-                  <TableRow key={enrollment.id}>
-                    <TableCell className="font-medium">{enrollment.student_name}</TableCell>
-                    <TableCell>{enrollment.email}</TableCell>
-                    <TableCell>{enrollment.phone}</TableCell>
-                    <TableCell>{new Date(enrollment.enrolled_at).toLocaleDateString()}</TableCell>
-                    <TableCell>
-                      <Badge variant={enrollment.completed_at ? "default" : "secondary"}>
-                        {enrollment.completed_at ? "Completed" : "In Progress"}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex space-x-2">
-                        {!enrollment.completed_at && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => markAsCompleted(enrollment.id)}
-                          >
-                            Mark Complete
-                          </Button>
-                        )}
-                        {enrollment.completed_at && (
-                          <>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => viewCertificate(enrollment)}
-                            >
-                              <Eye className="h-4 w-4 mr-1" />
-                              View
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => generateCertificate(enrollment)}
-                            >
-                              <Download className="h-4 w-4 mr-1" />
-                              Download
-                            </Button>
-                          </>
-                        )}
-                      </div>
+                {enrollments.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={6} className="text-center py-8 text-gray-500">
+                      No enrollments found.
                     </TableCell>
                   </TableRow>
-                ))}
+                ) : (
+                  enrollments.map((enrollment) => (
+                    <TableRow key={enrollment.id}>
+                      <TableCell className="font-medium">{enrollment.student_name}</TableCell>
+                      <TableCell>{enrollment.email}</TableCell>
+                      <TableCell>{enrollment.phone}</TableCell>
+                      <TableCell>{new Date(enrollment.enrolled_at).toLocaleDateString()}</TableCell>
+                      <TableCell>
+                        <Badge variant={enrollment.completed_at ? "default" : "secondary"}>
+                          {enrollment.completed_at ? "Completed" : "In Progress"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex space-x-2">
+                          {!enrollment.completed_at && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => markAsCompleted(enrollment.id)}
+                            >
+                              Mark Complete
+                            </Button>
+                          )}
+                          {enrollment.completed_at && (
+                            <>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => viewCertificate(enrollment)}
+                              >
+                                <Eye className="h-4 w-4 mr-1" />
+                                View
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => generateCertificate(enrollment)}
+                              >
+                                <Download className="h-4 w-4 mr-1" />
+                                Download
+                              </Button>
+                            </>
+                          )}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
               </TableBody>
             </Table>
           </div>
@@ -467,8 +552,22 @@ const LessonDialog = ({ lesson, onSave, onClose }: LessonDialogProps) => {
     is_active: lesson?.is_active ?? true
   });
 
+  useEffect(() => {
+    setFormData({
+      title: lesson?.title || '',
+      video_url: lesson?.video_url || '',
+      duration: lesson?.duration || '',
+      description: lesson?.description || '',
+      is_active: lesson?.is_active ?? true
+    });
+  }, [lesson]);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!formData.title.trim() || !formData.video_url.trim() || !formData.duration.trim()) {
+      alert('Please fill in all required fields.');
+      return;
+    }
     onSave(formData);
   };
 
@@ -480,17 +579,18 @@ const LessonDialog = ({ lesson, onSave, onClose }: LessonDialogProps) => {
       
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <Label htmlFor="title">Title</Label>
+          <Label htmlFor="title">Title *</Label>
           <Input
             id="title"
             value={formData.title}
             onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+            placeholder="Enter lesson title"
             required
           />
         </div>
         
         <div>
-          <Label htmlFor="video_url">Video URL</Label>
+          <Label htmlFor="video_url">Video URL *</Label>
           <Input
             id="video_url"
             value={formData.video_url}
@@ -501,7 +601,7 @@ const LessonDialog = ({ lesson, onSave, onClose }: LessonDialogProps) => {
         </div>
         
         <div>
-          <Label htmlFor="duration">Duration</Label>
+          <Label htmlFor="duration">Duration *</Label>
           <Input
             id="duration"
             value={formData.duration}
@@ -517,6 +617,7 @@ const LessonDialog = ({ lesson, onSave, onClose }: LessonDialogProps) => {
             id="description"
             value={formData.description}
             onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+            placeholder="Enter lesson description"
             rows={3}
           />
         </div>
@@ -528,10 +629,10 @@ const LessonDialog = ({ lesson, onSave, onClose }: LessonDialogProps) => {
             checked={formData.is_active}
             onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
           />
-          <Label htmlFor="is_active">Active</Label>
+          <Label htmlFor="is_active">Active (visible to students)</Label>
         </div>
         
-        <div className="flex justify-end space-x-2">
+        <div className="flex justify-end space-x-2 pt-4">
           <Button type="button" variant="outline" onClick={onClose}>
             Cancel
           </Button>

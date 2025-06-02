@@ -2,10 +2,12 @@
 import React, { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
-import { CheckCircle, Play, Award, Download } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
+import { AspectRatio } from "@/components/ui/aspect-ratio";
+import { Play, CheckCircle, Clock, Award } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 
 interface LessonViewerProps {
   isOpen: boolean;
@@ -14,7 +16,7 @@ interface LessonViewerProps {
   enrollmentId: string;
 }
 
-interface Lesson {
+interface CourseLesson {
   id: string;
   lesson_id: number;
   title: string;
@@ -22,6 +24,7 @@ interface Lesson {
   duration: string;
   description: string;
   order_index: number;
+  is_active: boolean;
 }
 
 interface LessonProgress {
@@ -30,31 +33,56 @@ interface LessonProgress {
 }
 
 export const LessonViewer = ({ isOpen, onClose, studentName, enrollmentId }: LessonViewerProps) => {
-  const [lessons, setLessons] = useState<Lesson[]>([]);
-  const [currentLessonIndex, setCurrentLessonIndex] = useState(0);
-  const [completedLessons, setCompletedLessons] = useState<number[]>([]);
+  const [lessons, setLessons] = useState<CourseLesson[]>([]);
+  const [currentLesson, setCurrentLesson] = useState<CourseLesson | null>(null);
   const [progress, setProgress] = useState<LessonProgress[]>([]);
-  const [showCertificate, setShowCertificate] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
+  const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
   useEffect(() => {
     if (isOpen && enrollmentId) {
       fetchLessons();
       fetchProgress();
+      
+      // Set up real-time subscription for course content changes
+      const courseContentChannel = supabase
+        .channel('lesson-viewer-course-content')
+        .on('postgres_changes', { 
+          event: '*', 
+          schema: 'public', 
+          table: 'course_content' 
+        }, (payload) => {
+          console.log('Course content changed in lesson viewer:', payload);
+          fetchLessons();
+        })
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(courseContentChannel);
+      };
     }
   }, [isOpen, enrollmentId]);
 
   const fetchLessons = async () => {
     try {
+      setLoading(true);
       const { data, error } = await supabase
         .from('course_content')
         .select('*')
         .eq('is_active', true)
         .order('order_index');
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching lessons:', error);
+        throw error;
+      }
+
+      console.log('Fetched lessons for viewer:', data);
       setLessons(data || []);
+      
+      if (data && data.length > 0 && !currentLesson) {
+        setCurrentLesson(data[0]);
+      }
     } catch (error) {
       console.error('Error fetching lessons:', error);
       toast({
@@ -63,7 +91,7 @@ export const LessonViewer = ({ isOpen, onClose, studentName, enrollmentId }: Les
         variant: "destructive",
       });
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
 
@@ -74,11 +102,13 @@ export const LessonViewer = ({ isOpen, onClose, studentName, enrollmentId }: Les
         .select('lesson_id, completed_at')
         .eq('enrollment_id', enrollmentId);
 
-      if (error) throw error;
-      
+      if (error) {
+        console.error('Error fetching progress:', error);
+        throw error;
+      }
+
+      console.log('Fetched progress:', data);
       setProgress(data || []);
-      const completed = data?.filter(p => p.completed_at).map(p => p.lesson_id) || [];
-      setCompletedLessons(completed);
     } catch (error) {
       console.error('Error fetching progress:', error);
     }
@@ -86,187 +116,195 @@ export const LessonViewer = ({ isOpen, onClose, studentName, enrollmentId }: Les
 
   const markLessonComplete = async (lessonId: number, lessonTitle: string) => {
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('lesson_progress')
         .upsert({
           enrollment_id: enrollmentId,
           lesson_id: lessonId,
           lesson_title: lessonTitle,
           completed_at: new Date().toISOString()
-        });
+        }, {
+          onConflict: 'enrollment_id,lesson_id'
+        })
+        .select();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error marking lesson complete:', error);
+        throw error;
+      }
 
-      setCompletedLessons(prev => [...prev, lessonId]);
+      console.log('Marked lesson complete:', data);
+      await fetchProgress();
       
       toast({
         title: "Lesson Completed!",
-        description: `Great job completing "${lessonTitle}"`,
+        description: `Great job completing "${lessonTitle}"!`,
       });
-
-      // Check if all lessons are completed
-      if (completedLessons.length + 1 === lessons.length) {
-        await generateCertificate();
-      }
     } catch (error) {
       console.error('Error marking lesson complete:', error);
       toast({
         title: "Error",
-        description: "Failed to save progress.",
+        description: "Failed to mark lesson as complete.",
         variant: "destructive",
       });
     }
   };
 
-  const generateCertificate = async () => {
-    try {
-      const { error } = await supabase
-        .from('course_enrollments')
-        .update({
-          completed_at: new Date().toISOString(),
-          certificate_generated: true
-        })
-        .eq('id', enrollmentId);
-
-      if (error) throw error;
-      
-      setShowCertificate(true);
-      toast({
-        title: "Congratulations!",
-        description: "You've completed the course! Your certificate is ready.",
-      });
-    } catch (error) {
-      console.error('Error generating certificate:', error);
-    }
+  const isLessonCompleted = (lessonId: number) => {
+    return progress.some(p => p.lesson_id === lessonId && p.completed_at);
   };
 
-  const currentLesson = lessons[currentLessonIndex];
-  const progressPercentage = (completedLessons.length / lessons.length) * 100;
+  const getCompletedLessonsCount = () => {
+    return progress.filter(p => p.completed_at).length;
+  };
 
-  if (isLoading) {
-    return (
-      <Dialog open={isOpen} onOpenChange={onClose}>
-        <DialogContent className="max-w-4xl">
-          <div className="flex items-center justify-center p-8">
-            <p>Loading course content...</p>
-          </div>
-        </DialogContent>
-      </Dialog>
-    );
-  }
+  const getProgressPercentage = () => {
+    if (lessons.length === 0) return 0;
+    return Math.round((getCompletedLessonsCount() / lessons.length) * 100);
+  };
 
-  if (showCertificate) {
-    return (
-      <Dialog open={isOpen} onOpenChange={onClose}>
-        <DialogContent className="max-w-2xl">
-          <div className="text-center p-8">
-            <Award className="h-20 w-20 text-yellow-500 mx-auto mb-6" />
-            <h2 className="text-3xl font-bold text-gray-800 mb-4">Congratulations!</h2>
-            <p className="text-lg text-gray-600 mb-6">
-              You have successfully completed the Fundamentals of Personal Branding course.
-            </p>
-            
-            <div className="bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-lg p-6 mb-6">
-              <h3 className="text-xl font-semibold text-gray-800 mb-2">Certificate of Completion</h3>
-              <p className="text-gray-600">This certifies that</p>
-              <p className="text-2xl font-bold text-brand-600 my-2">{studentName}</p>
-              <p className="text-gray-600">has successfully completed</p>
-              <p className="text-lg font-semibold text-gray-800">Fundamentals of Personal Branding</p>
-              <p className="text-sm text-gray-500 mt-4">
-                Completed on {new Date().toLocaleDateString()}
-              </p>
-            </div>
-            
-            <Button className="bg-brand-500 hover:bg-brand-600 text-white">
-              <Download className="h-4 w-4 mr-2" />
-              Download Certificate
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-    );
-  }
+  if (!isOpen) return null;
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-6xl max-h-[90vh]">
+      <DialogContent className="max-w-7xl max-h-[90vh] overflow-hidden">
         <DialogHeader>
-          <DialogTitle className="text-2xl font-bold">Personal Branding Course</DialogTitle>
-          <div className="flex items-center justify-between mt-2">
-            <span className="text-sm text-gray-500">Progress: {completedLessons.length} of {lessons.length} lessons completed</span>
-            <Progress value={progressPercentage} className="w-32" />
-          </div>
+          <DialogTitle className="flex items-center justify-between">
+            <span>Personal Branding Fundamentals Course</span>
+            <Badge variant="outline" className="ml-4">
+              Welcome, {studentName}
+            </Badge>
+          </DialogTitle>
         </DialogHeader>
         
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mt-6">
-          {/* Lesson List */}
-          <div className="lg:col-span-1 space-y-2">
-            <h3 className="font-semibold text-gray-800 mb-3">Course Content</h3>
-            {lessons.map((lesson, index) => (
-              <div
-                key={lesson.id}
-                className={`p-3 rounded-lg cursor-pointer transition-colors ${
-                  index === currentLessonIndex
-                    ? 'bg-brand-100 border border-brand-300'
-                    : 'bg-gray-50 hover:bg-gray-100'
-                } ${
-                  completedLessons.includes(lesson.lesson_id) ? 'border-green-300' : ''
-                }`}
-                onClick={() => {
-                  if (index === 0 || completedLessons.includes(lessons[index - 1]?.lesson_id)) {
-                    setCurrentLessonIndex(index);
-                  }
-                }}
-              >
-                <div className="flex items-center gap-2">
-                  {completedLessons.includes(lesson.lesson_id) ? (
-                    <CheckCircle className="h-4 w-4 text-green-500" />
-                  ) : (
-                    <Play className="h-4 w-4 text-gray-400" />
-                  )}
-                  <div>
-                    <p className="text-sm font-medium">{lesson.title}</p>
-                    <p className="text-xs text-gray-500">{lesson.duration}</p>
-                  </div>
-                </div>
-              </div>
-            ))}
+        {loading ? (
+          <div className="flex items-center justify-center py-12">
+            <p>Loading course content...</p>
           </div>
-          
-          {/* Video Player */}
-          <div className="lg:col-span-3">
-            {currentLesson && (
-              <div>
-                <h2 className="text-xl font-semibold mb-4">{currentLesson.title}</h2>
-                <div className="aspect-video bg-black rounded-lg mb-4">
-                  <iframe
-                    src={currentLesson.video_url}
-                    className="w-full h-full rounded-lg"
-                    allowFullScreen
-                    title={currentLesson.title}
-                  />
-                </div>
-                
-                <div className="flex justify-between items-center">
-                  <div>
-                    <p className="text-gray-600 mb-2">{currentLesson.description}</p>
-                    <p className="text-sm text-gray-500">Duration: {currentLesson.duration}</p>
-                  </div>
+        ) : (
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 h-full">
+            {/* Video Player */}
+            <div className="lg:col-span-3 space-y-4">
+              {currentLesson ? (
+                <>
+                  <AspectRatio ratio={16 / 9} className="bg-gray-100 rounded-lg overflow-hidden">
+                    <iframe
+                      src={currentLesson.video_url}
+                      title={currentLesson.title}
+                      className="w-full h-full"
+                      allowFullScreen
+                    />
+                  </AspectRatio>
                   
-                  {!completedLessons.includes(currentLesson.lesson_id) && (
-                    <Button
-                      onClick={() => markLessonComplete(currentLesson.lesson_id, currentLesson.title)}
-                      className="bg-green-500 hover:bg-green-600 text-white"
-                    >
-                      <CheckCircle className="h-4 w-4 mr-2" />
-                      Mark Complete
-                    </Button>
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-2xl font-bold">{currentLesson.title}</h3>
+                      <div className="flex items-center space-x-2">
+                        <Clock className="h-4 w-4 text-gray-500" />
+                        <span className="text-sm text-gray-500">{currentLesson.duration}</span>
+                      </div>
+                    </div>
+                    
+                    <p className="text-gray-600">{currentLesson.description}</p>
+                    
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-2">
+                        <span className="text-sm text-gray-500">
+                          Progress: {getCompletedLessonsCount()} of {lessons.length} lessons completed
+                        </span>
+                        <div className="w-32 bg-gray-200 rounded-full h-2">
+                          <div 
+                            className="bg-brand-500 h-2 rounded-full transition-all"
+                            style={{ width: `${getProgressPercentage()}%` }}
+                          />
+                        </div>
+                        <span className="text-sm font-medium">{getProgressPercentage()}%</span>
+                      </div>
+                      
+                      {!isLessonCompleted(currentLesson.lesson_id) && (
+                        <Button
+                          onClick={() => markLessonComplete(currentLesson.lesson_id, currentLesson.title)}
+                          className="bg-green-500 hover:bg-green-600"
+                        >
+                          <CheckCircle className="h-4 w-4 mr-2" />
+                          Mark Complete
+                        </Button>
+                      )}
+                      
+                      {isLessonCompleted(currentLesson.lesson_id) && (
+                        <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                          <CheckCircle className="h-4 w-4 mr-1" />
+                          Completed
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <div className="flex items-center justify-center py-12">
+                  <div className="text-center">
+                    <p className="text-gray-500 mb-4">No lessons available at the moment.</p>
+                    <p className="text-sm text-gray-400">New lessons will appear here when they are added.</p>
+                  </div>
+                </div>
+              )}
+            </div>
+            
+            {/* Course Sidebar */}
+            <div className="space-y-4">
+              <div className="bg-gradient-to-r from-brand-50 to-brand-100 p-4 rounded-lg">
+                <h4 className="font-semibold text-brand-800 mb-2">Course Progress</h4>
+                <div className="flex items-center space-x-2">
+                  <Award className="h-5 w-5 text-brand-600" />
+                  <span className="text-sm text-brand-700">
+                    {getProgressPercentage()}% Complete
+                  </span>
+                </div>
+              </div>
+              
+              <div>
+                <h4 className="font-semibold mb-3">Course Lessons</h4>
+                <div className="space-y-2 max-h-96 overflow-y-auto">
+                  {lessons.length === 0 ? (
+                    <p className="text-sm text-gray-500 text-center py-4">
+                      No lessons available
+                    </p>
+                  ) : (
+                    lessons.map((lesson, index) => (
+                      <Card
+                        key={lesson.id}
+                        className={`cursor-pointer transition-all hover:shadow-md ${
+                          currentLesson?.id === lesson.id 
+                            ? 'ring-2 ring-brand-500 bg-brand-50' 
+                            : ''
+                        }`}
+                        onClick={() => setCurrentLesson(lesson)}
+                      >
+                        <CardContent className="p-3">
+                          <div className="flex items-center space-x-3">
+                            <div className="flex-shrink-0">
+                              {isLessonCompleted(lesson.lesson_id) ? (
+                                <CheckCircle className="h-5 w-5 text-green-500" />
+                              ) : (
+                                <Play className="h-5 w-5 text-gray-400" />
+                              )}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium truncate">
+                                {index + 1}. {lesson.title}
+                              </p>
+                              <p className="text-xs text-gray-500">{lesson.duration}</p>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))
                   )}
                 </div>
               </div>
-            )}
+            </div>
           </div>
-        </div>
+        )}
       </DialogContent>
     </Dialog>
   );
