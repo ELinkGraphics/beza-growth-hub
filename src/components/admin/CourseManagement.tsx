@@ -8,7 +8,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { Play, Plus, Edit, Trash2, Users, Award, Clock } from "lucide-react";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Play, Plus, Edit, Trash2, Users, Award, Clock, Download, Eye } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 
@@ -49,6 +50,28 @@ export const CourseManagement = () => {
     fetchCourseContent();
     fetchEnrollments();
     fetchStats();
+
+    // Set up real-time subscriptions
+    const courseContentChannel = supabase
+      .channel('course-content-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'course_content' }, () => {
+        fetchCourseContent();
+        fetchStats();
+      })
+      .subscribe();
+
+    const enrollmentsChannel = supabase
+      .channel('enrollments-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'course_enrollments' }, () => {
+        fetchEnrollments();
+        fetchStats();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(courseContentChannel);
+      supabase.removeChannel(enrollmentsChannel);
+    };
   }, []);
 
   const fetchCourseContent = async () => {
@@ -139,8 +162,6 @@ export const CourseManagement = () => {
         toast({ title: "Success", description: "Lesson created successfully." });
       }
 
-      fetchCourseContent();
-      fetchStats();
       setIsDialogOpen(false);
       setEditingLesson(null);
     } catch (error) {
@@ -154,6 +175,8 @@ export const CourseManagement = () => {
   };
 
   const handleDeleteLesson = async (lessonId: string) => {
+    if (!confirm('Are you sure you want to delete this lesson?')) return;
+    
     try {
       const { error } = await supabase
         .from('course_content')
@@ -163,13 +186,88 @@ export const CourseManagement = () => {
       if (error) throw error;
       
       toast({ title: "Success", description: "Lesson deleted successfully." });
-      fetchCourseContent();
-      fetchStats();
     } catch (error) {
       console.error('Error deleting lesson:', error);
       toast({
         title: "Error",
         description: "Failed to delete lesson.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const generateCertificate = (enrollment: Enrollment) => {
+    // Simple certificate generation - creates a downloadable text file
+    const certificateContent = `
+CERTIFICATE OF COMPLETION
+
+This is to certify that
+
+${enrollment.student_name}
+
+has successfully completed the
+
+Personal Branding Fundamentals Course
+
+Date of Completion: ${enrollment.completed_at ? new Date(enrollment.completed_at).toLocaleDateString() : new Date().toLocaleDateString()}
+
+Email: ${enrollment.email}
+Phone: ${enrollment.phone}
+
+Congratulations on your achievement!
+
+---
+Grow with Beza
+    `;
+
+    const blob = new Blob([certificateContent], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `certificate-${enrollment.student_name.replace(/\s+/g, '-')}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  const viewCertificate = (enrollment: Enrollment) => {
+    const certificateContent = `
+CERTIFICATE OF COMPLETION
+
+This is to certify that ${enrollment.student_name} has successfully completed the Personal Branding Fundamentals Course.
+
+Date of Completion: ${enrollment.completed_at ? new Date(enrollment.completed_at).toLocaleDateString() : new Date().toLocaleDateString()}
+Email: ${enrollment.email}
+Phone: ${enrollment.phone}
+
+Congratulations on your achievement!
+
+---
+Grow with Beza
+    `;
+
+    alert(certificateContent);
+  };
+
+  const markAsCompleted = async (enrollmentId: string) => {
+    try {
+      const { error } = await supabase
+        .from('course_enrollments')
+        .update({
+          completed_at: new Date().toISOString(),
+          certificate_generated: true
+        })
+        .eq('id', enrollmentId);
+
+      if (error) throw error;
+      
+      toast({ title: "Success", description: "Student marked as completed." });
+    } catch (error) {
+      console.error('Error marking as completed:', error);
+      toast({
+        title: "Error",
+        description: "Failed to mark as completed.",
         variant: "destructive",
       });
     }
@@ -219,7 +317,7 @@ export const CourseManagement = () => {
       <Tabs defaultValue="content" className="w-full">
         <TabsList>
           <TabsTrigger value="content">Course Content</TabsTrigger>
-          <TabsTrigger value="enrollments">Enrollments</TabsTrigger>
+          <TabsTrigger value="enrollments">Student Enrollments</TabsTrigger>
         </TabsList>
         
         <TabsContent value="content" className="space-y-4">
@@ -286,35 +384,67 @@ export const CourseManagement = () => {
         
         <TabsContent value="enrollments" className="space-y-4">
           <h2 className="text-2xl font-bold">Student Enrollments</h2>
-          <div className="space-y-4">
-            {enrollments.map((enrollment) => (
-              <Card key={enrollment.id}>
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h3 className="text-lg font-semibold">{enrollment.student_name}</h3>
-                      <p className="text-gray-600">{enrollment.email}</p>
-                      <p className="text-sm text-gray-500">
-                        Enrolled: {new Date(enrollment.enrolled_at).toLocaleDateString()}
-                      </p>
-                    </div>
-                    <div className="text-right">
+          <div className="rounded-md border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Student Name</TableHead>
+                  <TableHead>Email</TableHead>
+                  <TableHead>Phone</TableHead>
+                  <TableHead>Enrolled Date</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {enrollments.map((enrollment) => (
+                  <TableRow key={enrollment.id}>
+                    <TableCell className="font-medium">{enrollment.student_name}</TableCell>
+                    <TableCell>{enrollment.email}</TableCell>
+                    <TableCell>{enrollment.phone}</TableCell>
+                    <TableCell>{new Date(enrollment.enrolled_at).toLocaleDateString()}</TableCell>
+                    <TableCell>
                       <Badge variant={enrollment.completed_at ? "default" : "secondary"}>
                         {enrollment.completed_at ? "Completed" : "In Progress"}
                       </Badge>
-                      {enrollment.certificate_generated && (
-                        <div className="mt-2">
-                          <Badge variant="outline">
-                            <Award className="h-3 w-3 mr-1" />
-                            Certificate Generated
-                          </Badge>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex space-x-2">
+                        {!enrollment.completed_at && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => markAsCompleted(enrollment.id)}
+                          >
+                            Mark Complete
+                          </Button>
+                        )}
+                        {enrollment.completed_at && (
+                          <>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => viewCertificate(enrollment)}
+                            >
+                              <Eye className="h-4 w-4 mr-1" />
+                              View
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => generateCertificate(enrollment)}
+                            >
+                              <Download className="h-4 w-4 mr-1" />
+                              Download
+                            </Button>
+                          </>
+                        )}
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           </div>
         </TabsContent>
       </Tabs>
