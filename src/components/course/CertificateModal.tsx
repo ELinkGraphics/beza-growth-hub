@@ -1,6 +1,6 @@
 
 import React from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Download, Award, Star } from "lucide-react";
@@ -64,6 +64,9 @@ export const CertificateModal = ({
             <Award className="h-6 w-6 text-yellow-500" />
             Congratulations! Course Completed
           </DialogTitle>
+          <DialogDescription>
+            You have successfully completed all lessons in the course. Download your certificate below.
+          </DialogDescription>
         </DialogHeader>
         
         <div className="space-y-6">
