@@ -6,9 +6,11 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Play, CheckCircle, Clock, Award } from "lucide-react";
+import { Play, CheckCircle, Clock, Award, Star } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { LessonComments } from "./LessonComments";
+import { LessonFiles } from "./LessonFiles";
 
 interface LessonViewerProps {
   isOpen: boolean;
@@ -38,6 +40,7 @@ export const LessonViewer = ({ isOpen, onClose, studentName, enrollmentId }: Les
   const [currentLesson, setCurrentLesson] = useState<CourseLesson | null>(null);
   const [progress, setProgress] = useState<LessonProgress[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isMarkingComplete, setIsMarkingComplete] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -146,6 +149,7 @@ export const LessonViewer = ({ isOpen, onClose, studentName, enrollmentId }: Les
   };
 
   const markLessonComplete = async (lessonId: number, lessonTitle: string) => {
+    setIsMarkingComplete(true);
     try {
       const { data, error } = await supabase
         .from('lesson_progress')
@@ -168,7 +172,7 @@ export const LessonViewer = ({ isOpen, onClose, studentName, enrollmentId }: Les
       await fetchProgress();
       
       toast({
-        title: "Lesson Completed!",
+        title: "🎉 Lesson Completed!",
         description: `Great job completing "${lessonTitle}"!`,
       });
 
@@ -178,8 +182,14 @@ export const LessonViewer = ({ isOpen, onClose, studentName, enrollmentId }: Les
         const nextLesson = lessons[currentIndex + 1];
         setCurrentLesson(nextLesson);
         toast({
-          title: "Next Lesson",
+          title: "📚 Next Lesson Ready",
           description: `Moving to "${nextLesson.title}"`,
+        });
+      } else {
+        // All lessons completed
+        toast({
+          title: "🏆 Course Completed!",
+          description: "Congratulations! You've completed all lessons.",
         });
       }
     } catch (error) {
@@ -189,6 +199,8 @@ export const LessonViewer = ({ isOpen, onClose, studentName, enrollmentId }: Les
         description: "Failed to mark lesson as complete.",
         variant: "destructive",
       });
+    } finally {
+      setIsMarkingComplete(false);
     }
   };
 
@@ -225,92 +237,109 @@ export const LessonViewer = ({ isOpen, onClose, studentName, enrollmentId }: Les
           </div>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 h-[calc(95vh-120px)]">
-            {/* Video Player - Scrollable Content */}
+            {/* Video Player and Content - Scrollable */}
             <div className="lg:col-span-3 flex flex-col h-full">
               <ScrollArea className="flex-1 pr-4">
                 {currentLesson ? (
-                  <div className="space-y-4">
-                    <AspectRatio ratio={16 / 9} className="bg-gray-100 rounded-lg overflow-hidden">
-                      <iframe
-                        src={currentLesson.video_url}
-                        title={currentLesson.title}
-                        className="w-full h-full"
-                        allowFullScreen
-                      />
-                    </AspectRatio>
-                    
+                  <div className="space-y-6">
+                    {/* Video Section */}
                     <div className="space-y-4">
+                      <AspectRatio ratio={16 / 9} className="bg-gray-100 rounded-lg overflow-hidden">
+                        <iframe
+                          src={currentLesson.video_url}
+                          title={currentLesson.title}
+                          className="w-full h-full"
+                          allowFullScreen
+                        />
+                      </AspectRatio>
+                      
+                      {/* Video Header with Mark Complete Button */}
                       <div className="flex items-center justify-between">
-                        <h3 className="text-2xl font-bold">{currentLesson.title}</h3>
-                        <div className="flex items-center space-x-2">
-                          <Clock className="h-4 w-4 text-gray-500" />
-                          <span className="text-sm text-gray-500">{currentLesson.duration}</span>
-                        </div>
-                      </div>
-                      
-                      <p className="text-gray-600 leading-relaxed">{currentLesson.description}</p>
-                      
-                      <div className="bg-gray-50 p-4 rounded-lg">
-                        <h4 className="font-semibold mb-2">Key Learning Points:</h4>
-                        <ul className="text-sm text-gray-600 space-y-1">
-                          <li>• Understanding the fundamentals covered in this module</li>
-                          <li>• Practical applications you can implement immediately</li>
-                          <li>• Real-world examples and case studies</li>
-                          <li>• Next steps for continued learning</li>
-                        </ul>
-                      </div>
-
-                      <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-                        <h4 className="font-semibold text-blue-800 mb-2">📝 Action Items:</h4>
-                        <p className="text-sm text-blue-700">
-                          After watching this lesson, take a moment to reflect on how you can apply these concepts to your personal brand. 
-                          Consider jotting down 2-3 key takeaways that resonate most with your current situation.
-                        </p>
-                      </div>
-
-                      {/* Additional content to demonstrate scrolling */}
-                      <div className="bg-green-50 p-4 rounded-lg border border-green-200">
-                        <h4 className="font-semibold text-green-800 mb-2">💡 Pro Tips:</h4>
-                        <ul className="text-sm text-green-700 space-y-1">
-                          <li>• Pause the video to take notes when something important resonates</li>
-                          <li>• Rewatch sections that you want to understand better</li>
-                          <li>• Complete each lesson fully before moving to the next</li>
-                          <li>• Apply what you learn immediately for better retention</li>
-                        </ul>
-                      </div>
-
-                      <div className="flex items-center justify-between pt-4 border-t">
-                        <div className="flex items-center space-x-2">
-                          <span className="text-sm text-gray-500">
-                            Progress: {getCompletedLessonsCount()} of {lessons.length} lessons completed
-                          </span>
-                          <div className="w-32 bg-gray-200 rounded-full h-2">
-                            <div 
-                              className="bg-brand-500 h-2 rounded-full transition-all"
-                              style={{ width: `${getProgressPercentage()}%` }}
-                            />
+                        <div>
+                          <h3 className="text-2xl font-bold">{currentLesson.title}</h3>
+                          <div className="flex items-center space-x-2 mt-1">
+                            <Clock className="h-4 w-4 text-gray-500" />
+                            <span className="text-sm text-gray-500">{currentLesson.duration}</span>
                           </div>
-                          <span className="text-sm font-medium">{getProgressPercentage()}%</span>
                         </div>
                         
-                        {!isLessonCompleted(currentLesson.lesson_id) && (
+                        {!isLessonCompleted(currentLesson.lesson_id) ? (
                           <Button
                             onClick={() => markLessonComplete(currentLesson.lesson_id, currentLesson.title)}
-                            className="bg-green-500 hover:bg-green-600"
+                            disabled={isMarkingComplete}
+                            className="bg-green-500 hover:bg-green-600 text-white px-6 py-2"
+                            size="lg"
                           >
-                            <CheckCircle className="h-4 w-4 mr-2" />
-                            Mark Complete
+                            {isMarkingComplete ? (
+                              "Marking Complete..."
+                            ) : (
+                              <>
+                                <CheckCircle className="h-4 w-4 mr-2" />
+                                Mark as Complete
+                              </>
+                            )}
                           </Button>
-                        )}
-                        
-                        {isLessonCompleted(currentLesson.lesson_id) && (
-                          <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-                            <CheckCircle className="h-4 w-4 mr-1" />
+                        ) : (
+                          <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 px-4 py-2">
+                            <CheckCircle className="h-4 w-4 mr-2" />
                             Completed
                           </Badge>
                         )}
                       </div>
                     </div>
+
+                    {/* Lesson Description */}
+                    <Card>
+                      <CardContent className="p-6">
+                        <h4 className="font-semibold text-lg mb-3">About This Lesson</h4>
+                        <p className="text-gray-600 leading-relaxed mb-4">{currentLesson.description}</p>
+                        
+                        <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                          <h5 className="font-semibold text-blue-800 mb-2">Key Learning Objectives:</h5>
+                          <ul className="text-sm text-blue-700 space-y-1">
+                            <li>• Understanding the fundamentals covered in this module</li>
+                            <li>• Practical applications you can implement immediately</li>
+                            <li>• Real-world examples and case studies</li>
+                            <li>• Next steps for continued learning</li>
+                          </ul>
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    {/* Progress Section */}
+                    <Card>
+                      <CardContent className="p-6">
+                        <div className="flex items-center justify-between mb-4">
+                          <h4 className="font-semibold text-lg">Your Progress</h4>
+                          <div className="flex items-center space-x-2">
+                            <Star className="h-5 w-5 text-yellow-500" />
+                            <span className="font-medium">{getProgressPercentage()}% Complete</span>
+                          </div>
+                        </div>
+                        
+                        <div className="space-y-2">
+                          <div className="flex justify-between text-sm text-gray-600">
+                            <span>{getCompletedLessonsCount()} of {lessons.length} lessons completed</span>
+                            <span>{lessons.length - getCompletedLessonsCount()} remaining</span>
+                          </div>
+                          <div className="w-full bg-gray-200 rounded-full h-3">
+                            <div 
+                              className="bg-gradient-to-r from-brand-500 to-brand-600 h-3 rounded-full transition-all duration-500"
+                              style={{ width: `${getProgressPercentage()}%` }}
+                            />
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    {/* Lesson Files */}
+                    <LessonFiles lessonId={currentLesson.lesson_id} />
+                    
+                    {/* Lesson Comments */}
+                    <LessonComments 
+                      lessonId={currentLesson.lesson_id} 
+                      lessonTitle={currentLesson.title}
+                    />
                   </div>
                 ) : (
                   <div className="flex items-center justify-center py-12">
