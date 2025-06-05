@@ -2,7 +2,7 @@
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { MessageCircle, Send } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -78,6 +78,9 @@ export const LessonComments = ({ lessonId, lessonTitle }: LessonCommentsProps) =
           <DialogContent className="max-w-md">
             <DialogHeader>
               <DialogTitle>Ask a Question</DialogTitle>
+              <DialogDescription>
+                Submit your question about this lesson and get help from our instructors.
+              </DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
               <div>

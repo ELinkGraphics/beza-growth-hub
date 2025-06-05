@@ -1,6 +1,5 @@
-
 import React, { useState, useEffect } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -153,13 +152,11 @@ export const LessonViewer = ({ isOpen, onClose, studentName, enrollmentId }: Les
     try {
       const { data, error } = await supabase
         .from('lesson_progress')
-        .upsert({
+        .insert({
           enrollment_id: enrollmentId,
           lesson_id: lessonId,
           lesson_title: lessonTitle,
           completed_at: new Date().toISOString()
-        }, {
-          onConflict: 'enrollment_id,lesson_id'
         })
         .select();
 
@@ -229,6 +226,9 @@ export const LessonViewer = ({ isOpen, onClose, studentName, enrollmentId }: Les
               Welcome back, {studentName}
             </Badge>
           </DialogTitle>
+          <DialogDescription>
+            Continue your learning journey and track your progress through our comprehensive course.
+          </DialogDescription>
         </DialogHeader>
         
         {loading ? (
