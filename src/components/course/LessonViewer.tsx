@@ -10,7 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { LessonComments } from "./LessonComments";
 import { LessonFiles } from "./LessonFiles";
-import { CertificateModal } from "./CertificateModal";
+import { EnhancedCertificateModal } from "./EnhancedCertificateModal";
 
 interface LessonViewerProps {
   isOpen: boolean;
@@ -420,8 +420,8 @@ export const LessonViewer = ({ isOpen, onClose, studentName, enrollmentId }: Les
         </DialogContent>
       </Dialog>
 
-      {/* Certificate Modal */}
-      <CertificateModal 
+      {/* Enhanced Certificate Modal */}
+      <EnhancedCertificateModal 
         isOpen={showCertificate}
         onClose={() => setShowCertificate(false)}
         studentName={studentName}
