@@ -16,6 +16,9 @@ import AdminDashboard from "./pages/AdminDashboard";
 import NotFound from "./pages/NotFound";
 import Auth from "./pages/Auth";
 import StudentDashboard from "./pages/StudentDashboard";
+import Blog from "./pages/Blog";
+import FAQ from "./pages/FAQ";
+import { LiveChat } from "./components/support/LiveChat";
 
 const queryClient = new QueryClient();
 
@@ -88,6 +91,26 @@ const App = () => {
                 </>
               }
             />
+            <Route
+              path="/blog"
+              element={
+                <>
+                  <Navbar />
+                  <Blog />
+                  <Footer />
+                </>
+              }
+            />
+            <Route
+              path="/faq"
+              element={
+                <>
+                  <Navbar />
+                  <FAQ />
+                  <Footer />
+                </>
+              }
+            />
 
             {/* Authentication & Student Routes */}
             <Route path="/auth" element={<Auth />} />
@@ -100,6 +123,9 @@ const App = () => {
             {/* 404 Route */}
             <Route path="*" element={<NotFound />} />
           </Routes>
+          
+          {/* Live Chat available on all pages */}
+          <LiveChat />
         </BrowserRouter>
       </TooltipProvider>
     </QueryClientProvider>
