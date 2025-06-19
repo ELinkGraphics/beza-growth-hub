@@ -1,5 +1,4 @@
 
-
 import type { Database } from './types'
 
 const supabaseUrl = "https://zxjeierbgixwirzcfxzl.supabase.co"
@@ -12,22 +11,30 @@ const initializeSupabase = async () => {
   if (supabaseClient) return supabaseClient
   
   try {
-    // Try different import patterns
+    // Import the entire module
     const supabaseModule = await import('@supabase/supabase-js')
     
-    // Handle different module export patterns
-    let createClient
-    if (supabaseModule.createClient) {
-      createClient = supabaseModule.createClient
-    } else if ((supabaseModule as any).default?.createClient) {
-      createClient = (supabaseModule as any).default.createClient
-    } else if (typeof (supabaseModule as any).default === 'function') {
-      createClient = (supabaseModule as any).default
-    } else {
+    // Get createClient from the module - handle different export patterns
+    let createClient: any
+    
+    // Try named export first
+    if ('createClient' in supabaseModule) {
+      createClient = (supabaseModule as any).createClient
+    }
+    // Try default export
+    else if (supabaseModule.default && 'createClient' in supabaseModule.default) {
+      createClient = supabaseModule.default.createClient
+    }
+    // Try if default itself is createClient
+    else if (typeof supabaseModule.default === 'function') {
+      createClient = supabaseModule.default
+    }
+    else {
       throw new Error('Could not find createClient function')
     }
     
-    supabaseClient = createClient<Database>(supabaseUrl, supabaseAnonKey, {
+    // Create the client without type arguments to avoid TS2347
+    supabaseClient = createClient(supabaseUrl, supabaseAnonKey, {
       auth: {
         storage: typeof window !== 'undefined' ? window.localStorage : undefined,
         persistSession: true,
@@ -65,4 +72,3 @@ export const supabase = new Proxy({} as any, {
     }
   }
 })
-
