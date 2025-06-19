@@ -1,130 +1,170 @@
 
 import React from "react";
-import { useWebsiteContent } from "@/hooks/use-website-content";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Loader2, CheckCircle } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { 
+  Instagram, 
+  Facebook, 
+  Linkedin, 
+  Youtube, 
+  BarChart3, 
+  PenTool, 
+  Target, 
+  Users,
+  TrendingUp,
+  Camera
+} from "lucide-react";
 import { Link } from "react-router-dom";
 
 const Services = () => {
-  const { content, loading, error } = useWebsiteContent("services");
+  const services = [
+    {
+      id: 1,
+      title: "Social Media Strategy & Management",
+      description: "Comprehensive social media management across all major platforms with data-driven strategies that increase engagement and brand visibility.",
+      icon: <Instagram className="h-8 w-8" />,
+      features: ["Multi-platform management", "Content planning", "Audience analysis", "Growth optimization"],
+      pricing: "Starting at $800/month"
+    },
+    {
+      id: 2,
+      title: "Content Creation & Copywriting",
+      description: "High-quality content creation including visuals, videos, and compelling copy that tells your brand story and drives engagement.",
+      icon: <PenTool className="h-8 w-8" />,
+      features: ["Visual content design", "Video production", "Copywriting", "Brand storytelling"],
+      pricing: "Starting at $500/project"
+    },
+    {
+      id: 3,
+      title: "Paid Advertising Campaigns",
+      description: "Strategic paid ad campaigns across Facebook, Instagram, and other platforms with performance analytics and optimization.",
+      icon: <Target className="h-8 w-8" />,
+      features: ["Facebook & Instagram ads", "Campaign optimization", "Performance tracking", "ROI analysis"],
+      pricing: "Starting at $600/month + ad spend"
+    },
+    {
+      id: 4,
+      title: "Brand Development & Consistency",
+      description: "Complete brand development services to establish and maintain consistent brand identity across all digital touchpoints.",
+      icon: <BarChart3 className="h-8 w-8" />,
+      features: ["Brand identity design", "Style guide creation", "Brand consistency", "Visual standards"],
+      pricing: "Starting at $1200/project"
+    },
+    {
+      id: 5,
+      title: "Influencer Partnership Marketing",
+      description: "Strategic influencer collaborations and partnership management to expand your reach and build authentic connections.",
+      icon: <Users className="h-8 w-8" />,
+      features: ["Influencer outreach", "Partnership management", "Campaign coordination", "Performance tracking"],
+      pricing: "Starting at $400/campaign"
+    },
+    {
+      id: 6,
+      title: "Analytics & Performance Optimization",
+      description: "Comprehensive analytics and data-driven optimization to maximize your digital marketing ROI and engagement rates.",
+      icon: <TrendingUp className="h-8 w-8" />,
+      features: ["Performance analytics", "ROI tracking", "Strategy optimization", "Monthly reporting"],
+      pricing: "Starting at $300/month"
+    }
+  ];
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-brand-600" />
-      </div>
-    );
-  }
-
-  if (error || !content) {
-    return (
-      <div className="container max-w-7xl mx-auto px-4 py-12">
-        <h1 className="text-3xl font-bold text-center mb-8">Services</h1>
-        <p className="text-center text-gray-600">
-          We're currently updating our services. Please check back later.
-        </p>
-      </div>
-    );
-  }
+  const achievements = [
+    { metric: "20%", description: "Average engagement increase" },
+    { metric: "35%", description: "Boost in audience interaction" },
+    { metric: "25%", description: "Improvement in viewer retention" },
+    { metric: "40%", description: "Increase in CTR" }
+  ];
 
   return (
-    <div className="bg-gradient-to-b from-white to-gray-50">
+    <div className="min-h-screen bg-gray-50">
       {/* Hero Section */}
-      <div className="container max-w-7xl mx-auto px-4 py-16 text-center">
-        <h1 className="text-4xl md:text-5xl font-bold mb-6">{content.intro.title}</h1>
-        <p className="text-lg text-gray-600 max-w-3xl mx-auto mb-8">
-          {content.intro.description}
-        </p>
-      </div>
-
-      {/* Services List */}
-      <div className="container max-w-7xl mx-auto px-4 py-12">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {content.services.map((service: any) => (
-            <div 
-              key={service.id}
-              className={`rounded-xl overflow-hidden shadow-md transition-all duration-300 hover:shadow-xl bg-white border ${
-                service.color === "brand" ? "border-brand-200" : "border-accent-200"
-              }`}
-            >
-              <div 
-                className={`p-6 ${
-                  service.color === "brand" ? "bg-brand-50" : "bg-accent-50"
-                }`}
-              >
-                <h3 className="text-2xl font-semibold mb-3">{service.title}</h3>
-                <p className="text-gray-600 mb-4">{service.description}</p>
-              </div>
-              
-              <div className="p-6 space-y-4">
-                <div>
-                  <h4 className="font-medium mb-2">Key Benefits:</h4>
-                  <ul className="space-y-2">
-                    {service.benefits.map((benefit: string, index: number) => (
-                      <li key={index} className="flex items-start">
-                        <CheckCircle 
-                          className={`h-5 w-5 mr-2 flex-shrink-0 ${
-                            service.color === "brand" ? "text-brand-500" : "text-accent-500"
-                          }`}
-                        />
-                        <span>{benefit}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-                
-                <div>
-                  <h4 className="font-medium mb-2">Available Formats:</h4>
-                  <p className="text-gray-600">{service.formats}</p>
-                </div>
-              </div>
-            </div>
-          ))}
+      <div className="bg-gradient-to-br from-brand-600 to-brand-400 text-white py-20">
+        <div className="container mx-auto px-4 text-center">
+          <h1 className="text-4xl md:text-5xl font-bold mb-6">Digital Marketing Services</h1>
+          <p className="text-xl mb-8 max-w-3xl mx-auto">
+            Professional social media marketing and brand development services that deliver measurable results and drive business growth.
+          </p>
+          <Button size="lg" variant="secondary" asChild>
+            <Link to="/book">Get Started Today</Link>
+          </Button>
         </div>
       </div>
 
-      {/* Pricing Section */}
-      <div className="bg-gray-50 py-16 mt-12">
-        <div className="container max-w-7xl mx-auto px-4">
-          <h2 className="text-3xl font-bold text-center mb-12">{content.pricing.title}</h2>
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {content.pricing.plans.map((plan: any) => (
-              <div 
-                key={plan.id} 
-                className={`rounded-xl shadow-md overflow-hidden bg-white transition-all duration-300 hover:shadow-xl relative ${
-                  plan.popular ? "border-2 border-brand-500" : "border border-gray-200"
-                }`}
-              >
-                {plan.popular && (
-                  <div className="absolute top-0 right-0 bg-brand-500 text-white text-xs font-bold py-1 px-3 rounded-bl-lg">
-                    POPULAR
+      {/* Achievements Section */}
+      <div className="py-16 bg-white">
+        <div className="container mx-auto px-4">
+          <h2 className="text-3xl font-bold text-center mb-12">Proven Results</h2>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+            {achievements.map((achievement, index) => (
+              <div key={index} className="text-center">
+                <div className="text-4xl font-bold text-brand-600 mb-2">{achievement.metric}</div>
+                <div className="text-gray-600">{achievement.description}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Services Grid */}
+      <div className="py-16">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-bold text-gray-800 mb-4">My Services</h2>
+            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+              Comprehensive digital marketing solutions tailored to your business needs
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {services.map((service) => (
+              <Card key={service.id} className="hover:shadow-lg transition-shadow h-full">
+                <CardHeader>
+                  <div className="text-brand-600 mb-4">{service.icon}</div>
+                  <CardTitle className="text-xl mb-2">{service.title}</CardTitle>
+                  <CardDescription className="text-gray-600">{service.description}</CardDescription>
+                </CardHeader>
+                <CardContent className="flex-1 flex flex-col">
+                  <div className="flex-1">
+                    <div className="space-y-2 mb-6">
+                      {service.features.map((feature, index) => (
+                        <div key={index} className="flex items-center text-sm text-gray-600">
+                          <div className="w-2 h-2 bg-brand-500 rounded-full mr-2"></div>
+                          {feature}
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                )}
-                
-                <div className="p-6">
-                  <h3 className="text-xl font-bold mb-2">{plan.name}</h3>
-                  <div className="flex items-end mb-4">
-                    <span className="text-4xl font-bold">{plan.price}</span>
-                    <span className="text-gray-500 ml-1">/{plan.duration}</span>
+                  <div className="mt-auto">
+                    <Badge variant="outline" className="mb-4">{service.pricing}</Badge>
+                    <Button className="w-full" asChild>
+                      <Link to="/contact">Learn More</Link>
+                    </Button>
                   </div>
-                  
-                  <ul className="space-y-3 mb-6">
-                    {plan.features.map((feature: string, index: number) => (
-                      <li key={index} className="flex items-start">
-                        <CheckCircle className="h-5 w-5 mr-2 text-brand-500 flex-shrink-0" />
-                        <span>{feature}</span>
-                      </li>
-                    ))}
-                  </ul>
-                  
-                  <Button 
-                    className={plan.popular ? "bg-brand-500 hover:bg-brand-600 w-full" : "bg-gray-700 hover:bg-gray-800 w-full"}
-                    asChild
-                  >
-                    <Link to="/contact">Get Started</Link>
-                  </Button>
-                </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Skills Section */}
+      <div className="py-16 bg-white">
+        <div className="container mx-auto px-4">
+          <h2 className="text-3xl font-bold text-center mb-12">Technical Expertise</h2>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            {[
+              "Social Media Strategy & Management",
+              "Content Creation & Copywriting", 
+              "Influencer & Partnership Marketing",
+              "Community Growth & Engagement",
+              "Brand Development & Consistency",
+              "Paid Ad Campaigns & Performance Analytics",
+              "Video Production & Graphic Design",
+              "Facebook & Instagram Advertising"
+            ].map((skill, index) => (
+              <div key={index} className="bg-gray-50 rounded-lg p-4 text-center">
+                <div className="text-sm font-medium text-gray-800">{skill}</div>
               </div>
             ))}
           </div>
@@ -132,27 +172,18 @@ const Services = () => {
       </div>
 
       {/* CTA Section */}
-      <div className="container max-w-7xl mx-auto px-4 py-16">
-        <div className="bg-brand-500 text-white rounded-xl p-8 md:p-12 text-center">
-          <h2 className="text-3xl font-bold mb-4">{content.cta.title}</h2>
-          <p className="text-lg mb-8 max-w-3xl mx-auto opacity-90">
-            {content.cta.description}
+      <div className="py-16 bg-brand-50">
+        <div className="container mx-auto px-4 text-center">
+          <h2 className="text-3xl font-bold text-gray-800 mb-6">Ready to Grow Your Brand?</h2>
+          <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
+            Let's discuss how we can elevate your digital presence and drive real results for your business.
           </p>
-          <div className="flex justify-center gap-4 flex-wrap">
-            <Button 
-              variant="secondary" 
-              size="lg" 
-              asChild
-            >
-              <Link to="/book">Book a Session</Link>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Button size="lg" asChild>
+              <Link to="/book">Book Consultation</Link>
             </Button>
-            <Button 
-              variant="outline" 
-              size="lg" 
-              className="border-white text-white hover:bg-white/10"
-              asChild
-            >
-              <Link to="/contact">Contact Me</Link>
+            <Button size="lg" variant="outline" asChild>
+              <Link to="/contact">Get in Touch</Link>
             </Button>
           </div>
         </div>

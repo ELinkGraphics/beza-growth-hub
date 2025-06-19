@@ -54,81 +54,111 @@ interface AboutContent {
 
 const defaultContent: AboutContent = {
   hero: {
-    title: "About Beza",
-    subtitle: "Learn about my journey, philosophy, and approach to personal and professional development."
+    title: "About Bezawit Zerefa",
+    subtitle: "Dynamic and results-driven social media marketing manager with 3+ years of experience in digital marketing, content creation, and branding. Passionate about data-driven marketing, influencer partnerships, and innovative digital storytelling."
   },
   story: {
     title: "My Story",
     paragraphs: [
-      "With over a decade of experience in coaching and mentoring, I've helped hundreds of individuals and organizations unlock their full potential and achieve remarkable results.",
-      "My journey began when I discovered the transformative power of personal development and strategic coaching. Since then, I've dedicated my career to empowering others to overcome obstacles, discover their strengths, and create meaningful change in their lives and careers.",
-      "I believe that everyone has untapped potential waiting to be discovered. My approach combines evidence-based strategies with intuitive guidance to create personalized pathways to success for each client."
+      "As a dynamic and results-driven social media marketing manager with over 3 years of experience, I specialize in digital marketing, content creation, and branding. My journey in the digital marketing world has been marked by a passion for crafting compelling content and executing high-impact campaigns.",
+      "I'm adept at optimizing engagement strategies to drive audience growth and brand awareness. My expertise spans across multi-platform social media strategies that yield measurable results, with proven success in managing campaigns that increase engagement and conversions.",
+      "What sets me apart is my data-driven approach to marketing, combined with creative storytelling and strategic influencer partnerships. I believe in the power of authentic connections and innovative digital strategies to transform brands and drive meaningful engagement."
     ],
     image: "/lovable-uploads/8ded2ada-1426-42c8-88e2-5c13060c5b5f.png"
   },
   philosophy: {
-    title: "My Philosophy",
+    title: "My Approach",
     values: [
       {
         id: "1",
-        title: "Authenticity",
-        description: "True growth begins with embracing who you truly are. I create a safe space for clients to explore their authentic selves and build from that foundation.",
-        icon: "heart"
+        title: "Data-Driven Strategy",
+        description: "Every campaign I create is backed by thorough analytics and performance metrics. I believe in making decisions based on solid data to ensure optimal results and ROI.",
+        icon: "📊"
       },
       {
         id: "2",
-        title: "Holistic Approach",
-        description: "Success isn't just about career achievements. I help clients create harmony between personal wellbeing, relationships, and professional goals.",
-        icon: "smile"
+        title: "Creative Storytelling",
+        description: "I craft compelling narratives that resonate with audiences and build authentic brand connections. Content creation is at the heart of effective digital marketing.",
+        icon: "✨"
       },
       {
         id: "3",
-        title: "Continuous Growth",
-        description: "Growth is a journey, not a destination. I equip clients with tools and mindsets that support lifelong development and adaptation.",
-        icon: "expand"
+        title: "Multi-Platform Excellence",
+        description: "From Instagram to LinkedIn, I develop tailored strategies for each platform to maximize reach and engagement across diverse digital landscapes.",
+        icon: "🚀"
       }
     ]
   },
   credentials: {
-    title: "Credentials & Experience",
+    title: "Professional Background & Expertise",
     education: [
       {
         id: "1",
-        degree: "Master's in Organizational Psychology",
-        institution: "Stanford University",
-        year: "2012"
+        degree: "High School Diploma",
+        institution: "Magic Carpet",
+        year: "2018-2020"
       },
       {
         id: "2",
-        degree: "Certified Professional Coach",
-        institution: "International Coach Federation",
-        year: "2013"
+        degree: "Digital and Social Media Marketing Certification",
+        institution: "Professional Development",
+        year: "2022"
       },
       {
         id: "3",
-        degree: "Bachelor's in Psychology",
-        institution: "University of California, Berkeley",
-        year: "2010"
+        degree: "Social Media Marketing Certification",
+        institution: "Industry Training",
+        year: "2023"
+      },
+      {
+        id: "4",
+        degree: "Creating Social Media Ad Campaigns with Canva",
+        institution: "Canva Education",
+        year: "2023"
+      },
+      {
+        id: "5",
+        degree: "How to Set Up a Facebook Ads Campaign",
+        institution: "Facebook Blueprint",
+        year: "2023"
       }
     ],
     experience: [
       {
         id: "1",
-        position: "Executive Coach",
-        company: "Fortune 500 Companies",
-        period: "2015-Present"
+        position: "Digital Marketing Manager | Brand Manager",
+        company: "Little Tigers Kids (Remote)",
+        period: "November 2024 - Present"
       },
       {
         id: "2",
-        position: "Leadership Development Specialist",
-        company: "Global Coaching Institute",
-        period: "2013-2015"
+        position: "Digital Marketer | Social Media & Event Manager",
+        company: "Droga Consulting (Full-time)",
+        period: "August 2024 - Present"
       },
       {
         id: "3",
-        position: "Organizational Development Consultant",
-        company: "McKinsey & Company",
-        period: "2012-2013"
+        position: "Social Media Manager & Content Creator",
+        company: "Yonile Digital (Hybrid)",
+        period: "March 2024 - November 2024"
+      },
+      {
+        id: "4",
+        position: "Social Media Marketing Manager",
+        company: "Khilx (Hybrid)",
+        period: "March 2024 - November 2024"
+      },
+      {
+        id: "5",
+        position: "Digital Marketing Manager",
+        company: "Start Easy App (Hybrid)",
+        period: "January 2022 - September 2024"
+      },
+      {
+        id: "6",
+        position: "Social Media Manager",
+        company: "DINK Multimedia (Full-Time)",
+        period: "October 2023 - February 2024"
       }
     ]
   }

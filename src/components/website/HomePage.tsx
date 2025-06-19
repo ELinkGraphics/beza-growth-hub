@@ -21,26 +21,28 @@ const HomePage = () => {
   // Default content if none is found
   const defaultContent = {
     hero: {
-      title: "Transform Your Potential with Expert Guidance",
-      subtitle: "Personal and professional development coaching to help you achieve your goals and unlock your true potential.",
-      ctaText: "Book a Session",
+      title: "Transform Your Brand with Expert Digital Marketing",
+      subtitle: "Professional social media marketing and brand development services with 3+ years of proven results in digital marketing, content creation, and audience engagement.",
+      ctaText: "Book a Consultation",
       heroImage: "/placeholder.svg"
     },
     about: {
-      title: "About Beza",
-      paragraph1: "With over a decade of experience in personal and professional development, I'm passionate about helping individuals and organizations unlock their true potential and achieve lasting success.",
-      paragraph2: "My approach combines proven strategies with personalized coaching to create a tailored experience that addresses your unique challenges and goals.",
+      title: "About Bezawit",
+      paragraph1: "With over 3 years of experience in digital marketing and social media management, I specialize in creating data-driven campaigns that deliver measurable results. My expertise spans content creation, brand development, and multi-platform social media strategies.",
+      paragraph2: "I'm passionate about helping businesses grow their online presence through innovative digital storytelling, strategic influencer partnerships, and compelling content that drives audience engagement and brand awareness.",
       aboutImage: "/placeholder.svg"
     },
     cta: {
-      title: "Ready to Start Your Growth Journey?",
-      description: "Take the first step toward unlocking your potential. Book a consultation today."
+      title: "Ready to Grow Your Brand?",
+      description: "Let's work together to create a digital marketing strategy that delivers real results for your business."
     },
     features: [
-      "Personalized coaching sessions",
-      "Evidence-based strategies",
-      "Flexible scheduling options",
-      "Ongoing support between sessions"
+      "Social Media Strategy & Management",
+      "Content Creation & Copywriting", 
+      "Brand Development & Consistency",
+      "Paid Ad Campaigns & Analytics",
+      "Influencer Partnership Marketing",
+      "Community Growth & Engagement"
     ]
   };
 
