@@ -1,46 +1,62 @@
 
+
 import type { Database } from './types'
 
 const supabaseUrl = "https://zxjeierbgixwirzcfxzl.supabase.co"
-const supabaseAnonKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp4amVpZXJiZ2l4d2lyemNmeHpsIiwicm9sZUFDVEIOb24iLCJpYXQiOjE3NDcwNTQyNjMsImV4cCI6MjA2MjYzMDI2M30.0pJckGVFUcPst7QVBV7ubnI4KuF4kCnVJIw1AcY8oyU"
+const supabaseAnonKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp4amVpZXJiZ2l4d2lyemNmeHpsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDcwNTQyNjMsImV4cCI6MjA2MjYzMDI2M30.0pJckGVFUcPst7QVBV7ubnI4KuF4kCnVJIw1AcY8oyU"
 
-// Dynamic import to bypass TypeScript issues
-const createSupabaseClient = async () => {
-  const supabaseModule = await import('@supabase/supabase-js')
-  const createClient = supabaseModule.createClient || (supabaseModule as any).default?.createClient || (supabaseModule as any).default
+// Use dynamic import but handle it synchronously
+let supabaseClient: any = null
+
+const initializeSupabase = async () => {
+  if (supabaseClient) return supabaseClient
   
-  if (!createClient) {
-    throw new Error('Could not find createClient in @supabase/supabase-js')
-  }
-  
-  return createClient<Database>(supabaseUrl, supabaseAnonKey, {
-    auth: {
-      storage: typeof window !== 'undefined' ? window.localStorage : undefined,
-      persistSession: true,
-      autoRefreshToken: true,
-    }
-  })
-}
-
-// Create a promise-based client that resolves to the actual Supabase client
-let supabaseClientPromise: Promise<any> | null = null
-
-const getSupabaseClient = () => {
-  if (!supabaseClientPromise) {
-    supabaseClientPromise = createSupabaseClient()
-  }
-  return supabaseClientPromise
-}
-
-// Export a proxy that handles async resolution
-export const supabase = new Proxy({} as any, {
-  get(target, prop) {
-    if (prop === 'then' || prop === 'catch' || prop === 'finally') {
-      return getSupabaseClient()[prop as keyof Promise<any>].bind(getSupabaseClient())
+  try {
+    // Try different import patterns
+    const supabaseModule = await import('@supabase/supabase-js')
+    
+    // Handle different module export patterns
+    let createClient
+    if (supabaseModule.createClient) {
+      createClient = supabaseModule.createClient
+    } else if ((supabaseModule as any).default?.createClient) {
+      createClient = (supabaseModule as any).default.createClient
+    } else if (typeof (supabaseModule as any).default === 'function') {
+      createClient = (supabaseModule as any).default
+    } else {
+      throw new Error('Could not find createClient function')
     }
     
+    supabaseClient = createClient<Database>(supabaseUrl, supabaseAnonKey, {
+      auth: {
+        storage: typeof window !== 'undefined' ? window.localStorage : undefined,
+        persistSession: true,
+        autoRefreshToken: true,
+      }
+    })
+    
+    return supabaseClient
+  } catch (error) {
+    console.error('Failed to initialize Supabase client:', error)
+    throw error
+  }
+}
+
+// Initialize immediately
+initializeSupabase().catch(console.error)
+
+// Export a proxy that waits for initialization
+export const supabase = new Proxy({} as any, {
+  get(target, prop) {
+    // If client is already initialized, return the property directly
+    if (supabaseClient) {
+      const value = supabaseClient[prop]
+      return typeof value === 'function' ? value.bind(supabaseClient) : value
+    }
+    
+    // If not initialized, return an async wrapper
     return async (...args: any[]) => {
-      const client = await getSupabaseClient()
+      const client = await initializeSupabase()
       const method = client[prop]
       if (typeof method === 'function') {
         return method.apply(client, args)
@@ -49,3 +65,4 @@ export const supabase = new Proxy({} as any, {
     }
   }
 })
+
