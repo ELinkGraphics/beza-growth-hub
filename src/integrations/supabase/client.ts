@@ -1,7 +1,13 @@
 
 import { createClient } from '@supabase/supabase-js'
 
-const supabaseUrl = "https://wumlallyqfgycagqhkxt.supabase.co"
-const supabaseAnonKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind1bWxhbGx5cWZneWNhZ3Foa3h0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzQzMDYwMjcsImV4cCI6MjA0OTg4MjAyN30.0TaOX3a_K5iRpNZJyxeN1J77VNpzNjADWi_OGPMrRdU"
+const supabaseUrl = "https://zxjeierbgixwirzcfxzl.supabase.co"
+const supabaseAnonKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp4amVpZXJiZ2l4d2lyemNmeHpsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDcwNTQyNjMsImV4cCI6MjA2MjYzMDI2M30.0pJckGVFUcPst7QVBV7ubnI4KuF4kCnVJIw1AcY8oyU"
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    storage: typeof window !== 'undefined' ? window.localStorage : undefined,
+    persistSession: true,
+    autoRefreshToken: true,
+  }
+})
