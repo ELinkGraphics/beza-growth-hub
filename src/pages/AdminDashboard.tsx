@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -6,14 +7,15 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Calendar, Mail, ArrowLeft, Book, User, Settings, GraduationCap } from "lucide-react";
 import { AppointmentsList } from "./AppointmentsList";
 import { ContactsList } from "./ContactsList";
-import { CourseManagement } from "@/components/admin/CourseManagement";
+import { EnhancedCourseManagement } from "@/components/admin/EnhancedCourseManagement";
+import { BulkOperations } from "@/components/admin/BulkOperations";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import WebsiteCustomizer from "@/components/admin/WebsiteCustomizer";
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState("appointments");
+  const [activeTab, setActiveTab] = useState("courses");
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
@@ -21,7 +23,9 @@ const AdminDashboard = () => {
     pendingAppointments: 0,
     totalContacts: 0,
     newContacts: 0,
-    totalEnrollments: 0
+    totalEnrollments: 0,
+    totalCourses: 0,
+    publishedCourses: 0
   });
   const { toast } = useToast();
   
@@ -38,13 +42,23 @@ const AdminDashboard = () => {
         
         setIsAuthenticated(true);
         
-        // Fetch stats from Supabase including course enrollments
-        const [appointmentsRes, pendingAppointmentsRes, contactsRes, newContactsRes, enrollmentsRes] = await Promise.all([
+        // Fetch comprehensive stats
+        const [
+          appointmentsRes, 
+          pendingAppointmentsRes, 
+          contactsRes, 
+          newContactsRes, 
+          enrollmentsRes,
+          coursesRes,
+          publishedCoursesRes
+        ] = await Promise.all([
           supabase.from("appointments").select("*", { count: 'exact', head: true }),
           supabase.from("appointments").select("*", { count: 'exact', head: true }).eq("status", "pending"),
           supabase.from("contacts").select("*", { count: 'exact', head: true }),
           supabase.from("contacts").select("*", { count: 'exact', head: true }).eq("is_read", false),
           supabase.from("course_enrollments").select("*", { count: 'exact', head: true }),
+          supabase.from("courses").select("*", { count: 'exact', head: true }),
+          supabase.from("courses").select("*", { count: 'exact', head: true }).eq("is_published", true),
         ]);
         
         setStats({
@@ -52,7 +66,9 @@ const AdminDashboard = () => {
           pendingAppointments: pendingAppointmentsRes.count || 0,
           totalContacts: contactsRes.count || 0,
           newContacts: newContactsRes.count || 0,
-          totalEnrollments: enrollmentsRes.count || 0
+          totalEnrollments: enrollmentsRes.count || 0,
+          totalCourses: coursesRes.count || 0,
+          publishedCourses: publishedCoursesRes.count || 0
         });
       } catch (error) {
         console.error("Error checking authentication:", error);
@@ -97,7 +113,7 @@ const AdminDashboard = () => {
   }
 
   if (!isAuthenticated) {
-    return null; // Will redirect in useEffect
+    return null;
   }
 
   return (
@@ -138,7 +154,49 @@ const AdminDashboard = () => {
         <h1 className="text-3xl font-bold mb-6">Admin Dashboard</h1>
         
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-7 gap-6 mb-8">
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-gray-500">
+                Total Courses
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center">
+                <Book className="h-5 w-5 text-blue-500 mr-2" />
+                <span className="text-3xl font-bold">{stats.totalCourses}</span>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-gray-500">
+                Published Courses
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center">
+                <GraduationCap className="h-5 w-5 text-green-500 mr-2" />
+                <span className="text-3xl font-bold">{stats.publishedCourses}</span>
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-gray-500">
+                Course Enrollments
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center">
+                <User className="h-5 w-5 text-purple-500 mr-2" />
+                <span className="text-3xl font-bold">{stats.totalEnrollments}</span>
+              </div>
+            </CardContent>
+          </Card>
+
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-gray-500">
@@ -161,7 +219,7 @@ const AdminDashboard = () => {
             </CardHeader>
             <CardContent>
               <div className="flex items-center">
-                <Book className="h-5 w-5 text-accent-500 mr-2" />
+                <Calendar className="h-5 w-5 text-accent-500 mr-2" />
                 <span className="text-3xl font-bold">{stats.pendingAppointments}</span>
               </div>
             </CardContent>
@@ -194,29 +252,23 @@ const AdminDashboard = () => {
               </div>
             </CardContent>
           </Card>
-
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-gray-500">
-                Course Enrollments
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center">
-                <GraduationCap className="h-5 w-5 text-green-500 mr-2" />
-                <span className="text-3xl font-bold">{stats.totalEnrollments}</span>
-              </div>
-            </CardContent>
-          </Card>
         </div>
         
-        {/* Tabs for different data */}
+        {/* Tabs for different sections */}
         <Tabs 
-          defaultValue="appointments"
+          defaultValue="courses"
           className="w-full"
           onValueChange={(value) => setActiveTab(value)}
         >
           <TabsList className="mb-6">
+            <TabsTrigger value="courses" className="text-base">
+              <GraduationCap className="h-4 w-4 mr-2" />
+              Course Management
+            </TabsTrigger>
+            <TabsTrigger value="students" className="text-base">
+              <User className="h-4 w-4 mr-2" />
+              Student Operations
+            </TabsTrigger>
             <TabsTrigger value="appointments" className="text-base">
               <Calendar className="h-4 w-4 mr-2" />
               Appointments
@@ -225,15 +277,19 @@ const AdminDashboard = () => {
               <Mail className="h-4 w-4 mr-2" />
               Contact Messages
             </TabsTrigger>
-            <TabsTrigger value="courses" className="text-base">
-              <GraduationCap className="h-4 w-4 mr-2" />
-              Course Management
-            </TabsTrigger>
             <TabsTrigger value="website" className="text-base">
               <Settings className="h-4 w-4 mr-2" />
               Website Customization
             </TabsTrigger>
           </TabsList>
+          
+          <TabsContent value="courses">
+            <EnhancedCourseManagement />
+          </TabsContent>
+
+          <TabsContent value="students">
+            <BulkOperations />
+          </TabsContent>
           
           <TabsContent value="appointments">
             <AppointmentsList />
@@ -241,10 +297,6 @@ const AdminDashboard = () => {
           
           <TabsContent value="contacts">
             <ContactsList />
-          </TabsContent>
-          
-          <TabsContent value="courses">
-            <CourseManagement />
           </TabsContent>
           
           <TabsContent value="website">
