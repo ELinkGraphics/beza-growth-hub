@@ -1,7 +1,10 @@
 
 import { useState, useEffect, useContext, createContext, ReactNode } from 'react';
-import type { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
+
+// Import types from the Database type definitions
+type User = any; // We'll use any for now since the auth.users type comes from Supabase
+type Session = any; // We'll use any for now since the session type comes from Supabase
 
 interface AuthContextType {
   user: User | null;
