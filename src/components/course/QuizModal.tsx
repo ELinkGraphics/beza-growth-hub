@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -32,8 +31,7 @@ export const QuizModal = ({ isOpen, onClose, lessonTitle }: QuizModalProps) => {
       id: "1",
       question: "What is the most important element of a strong personal brand?",
       options: [
-        "Having a professional hea
-",
+        "Having a professional headshot",
         "Authenticity and consistency",
         "Using all social media platforms",
         "Having a large following"
