@@ -293,8 +293,8 @@ export const LessonViewer = ({ isOpen, onClose, studentName, enrollmentId }: Les
   return (
     <>
       <Dialog open={isOpen} onOpenChange={onClose}>
-        <DialogContent className="max-w-7xl max-h-[95vh] p-0 overflow-hidden">
-          <DialogHeader className="p-6 pb-0">
+        <DialogContent className="max-w-7xl h-[95vh] p-0 overflow-hidden flex flex-col">
+          <DialogHeader className="p-6 pb-4 flex-shrink-0">
             <DialogTitle className="flex items-center justify-between flex-wrap gap-2">
               <span className="text-lg sm:text-xl">Personal Branding Fundamentals Course</span>
               <div className="flex items-center gap-2">
@@ -319,16 +319,16 @@ export const LessonViewer = ({ isOpen, onClose, studentName, enrollmentId }: Les
           </DialogHeader>
           
           {loading ? (
-            <div className="flex items-center justify-center py-12">
+            <div className="flex items-center justify-center flex-1">
               <p>Loading course content...</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 p-6 pt-0 h-[calc(95vh-120px)]">
-              {/* Video Player and Content - Scrollable */}
-              <div className="lg:col-span-3 flex flex-col h-full">
-                <ScrollArea className="flex-1 pr-2">
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 px-6 pb-6 flex-1 min-h-0">
+              {/* Video Player and Content - Main scrollable area */}
+              <div className="lg:col-span-3 flex flex-col min-h-0">
+                <ScrollArea className="flex-1">
                   {currentLesson ? (
-                    <div className="space-y-4 pb-4">
+                    <div className="space-y-6 pr-4">
                       {/* Video Section */}
                       <div className="space-y-4">
                         <AspectRatio ratio={16 / 9} className="bg-gray-100 rounded-lg overflow-hidden">
@@ -440,7 +440,7 @@ export const LessonViewer = ({ isOpen, onClose, studentName, enrollmentId }: Les
               </div>
               
               {/* Desktop Sidebar */}
-              <div className="hidden lg:block h-full">
+              <div className="hidden lg:block">
                 <LessonSidebar className="h-full" />
               </div>
             </div>
