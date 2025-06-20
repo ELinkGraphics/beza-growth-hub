@@ -8,11 +8,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, AlertCircle } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const Auth = () => {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [connectionError, setConnectionError] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -32,9 +34,15 @@ const Auth = () => {
   useEffect(() => {
     // Check if user is already logged in
     const checkSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        navigate("/dashboard");
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+          navigate("/dashboard");
+        }
+        setConnectionError(false);
+      } catch (error) {
+        console.error('Connection error:', error);
+        setConnectionError(true);
       }
     };
     
@@ -85,7 +93,15 @@ const Auth = () => {
         }
       });
 
-      if (error) throw error;
+      if (error) {
+        if (error.message.includes('Failed to fetch') || error.message.includes('fetch')) {
+          setConnectionError(true);
+          throw new Error('Unable to connect to authentication service. Please check your internet connection and try again.');
+        }
+        throw error;
+      }
+
+      setConnectionError(false);
 
       if (data.user && !data.session) {
         toast({
@@ -99,9 +115,10 @@ const Auth = () => {
         });
       }
     } catch (error: any) {
+      console.error('Sign up error:', error);
       toast({
         title: "Sign up failed",
-        description: error.message,
+        description: error.message || "An unexpected error occurred. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -119,16 +136,25 @@ const Auth = () => {
         password: signInData.password,
       });
 
-      if (error) throw error;
+      if (error) {
+        if (error.message.includes('Failed to fetch') || error.message.includes('fetch')) {
+          setConnectionError(true);
+          throw new Error('Unable to connect to authentication service. Please check your internet connection and try again.');
+        }
+        throw error;
+      }
+
+      setConnectionError(false);
 
       toast({
         title: "Welcome back!",
         description: "You have been signed in successfully.",
       });
     } catch (error: any) {
+      console.error('Sign in error:', error);
       toast({
         title: "Sign in failed",
-        description: error.message,
+        description: error.message || "An unexpected error occurred. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -147,6 +173,15 @@ const Auth = () => {
         </CardHeader>
         
         <CardContent>
+          {connectionError && (
+            <Alert className="mb-4" variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
+                Unable to connect to the authentication service. Please check your internet connection and try again.
+              </AlertDescription>
+            </Alert>
+          )}
+
           <Tabs defaultValue="signin" className="w-full">
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="signin">Sign In</TabsTrigger>
@@ -164,6 +199,7 @@ const Auth = () => {
                     value={signInData.email}
                     onChange={(e) => setSignInData(prev => ({ ...prev, email: e.target.value }))}
                     required
+                    disabled={loading || connectionError}
                   />
                 </div>
                 
@@ -177,6 +213,7 @@ const Auth = () => {
                       value={signInData.password}
                       onChange={(e) => setSignInData(prev => ({ ...prev, password: e.target.value }))}
                       required
+                      disabled={loading || connectionError}
                     />
                     <Button
                       type="button"
@@ -184,6 +221,7 @@ const Auth = () => {
                       size="sm"
                       className="absolute right-0 top-0 h-full px-3"
                       onClick={() => setShowPassword(!showPassword)}
+                      disabled={loading || connectionError}
                     >
                       {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </Button>
@@ -193,7 +231,7 @@ const Auth = () => {
                 <Button 
                   type="submit" 
                   className="w-full bg-brand-500 hover:bg-brand-600"
-                  disabled={loading}
+                  disabled={loading || connectionError}
                 >
                   {loading ? "Signing in..." : "Sign In"}
                 </Button>
@@ -211,6 +249,7 @@ const Auth = () => {
                     value={signUpData.fullName}
                     onChange={(e) => setSignUpData(prev => ({ ...prev, fullName: e.target.value }))}
                     required
+                    disabled={loading || connectionError}
                   />
                 </div>
                 
@@ -223,6 +262,7 @@ const Auth = () => {
                     value={signUpData.email}
                     onChange={(e) => setSignUpData(prev => ({ ...prev, email: e.target.value }))}
                     required
+                    disabled={loading || connectionError}
                   />
                 </div>
                 
@@ -236,6 +276,7 @@ const Auth = () => {
                       value={signUpData.password}
                       onChange={(e) => setSignUpData(prev => ({ ...prev, password: e.target.value }))}
                       required
+                      disabled={loading || connectionError}
                     />
                     <Button
                       type="button"
@@ -243,6 +284,7 @@ const Auth = () => {
                       size="sm"
                       className="absolute right-0 top-0 h-full px-3"
                       onClick={() => setShowPassword(!showPassword)}
+                      disabled={loading || connectionError}
                     >
                       {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </Button>
@@ -258,13 +300,14 @@ const Auth = () => {
                     value={signUpData.confirmPassword}
                     onChange={(e) => setSignUpData(prev => ({ ...prev, confirmPassword: e.target.value }))}
                     required
+                    disabled={loading || connectionError}
                   />
                 </div>
                 
                 <Button 
                   type="submit" 
                   className="w-full bg-brand-500 hover:bg-brand-600"
-                  disabled={loading}
+                  disabled={loading || connectionError}
                 >
                   {loading ? "Creating account..." : "Create Account"}
                 </Button>
