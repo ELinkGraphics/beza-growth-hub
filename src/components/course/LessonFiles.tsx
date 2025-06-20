@@ -55,16 +55,14 @@ export const LessonFiles = ({ lessonId }: LessonFilesProps) => {
   };
 
   const handleDownload = (file: LessonFile) => {
-    // In a real implementation, you would handle the actual download
     console.log(`Downloading file: ${file.name}`);
-    // For demo purposes, we'll just show a message
     alert(`Downloading ${file.name}...`);
   };
 
   return (
-    <Card className="mt-6">
+    <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
+        <CardTitle className="flex items-center gap-2 text-lg">
           <Download className="h-5 w-5" />
           Lesson Resources
         </CardTitle>
@@ -75,12 +73,14 @@ export const LessonFiles = ({ lessonId }: LessonFilesProps) => {
             {lessonFiles.map((file) => (
               <div
                 key={file.id}
-                className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 transition-colors"
+                className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 transition-colors gap-3"
               >
-                <div className="flex items-center gap-3">
-                  {getFileIcon(file.type)}
-                  <div>
-                    <p className="font-medium text-sm">{file.name}</p>
+                <div className="flex items-center gap-3 flex-1 min-w-0">
+                  <div className="flex-shrink-0">
+                    {getFileIcon(file.type)}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-sm truncate">{file.name}</p>
                     <p className="text-xs text-gray-500">{file.size}</p>
                   </div>
                 </div>
@@ -88,9 +88,10 @@ export const LessonFiles = ({ lessonId }: LessonFilesProps) => {
                   size="sm"
                   variant="outline"
                   onClick={() => handleDownload(file)}
-                  className="hover:bg-brand-50 hover:border-brand-300"
+                  className="hover:bg-brand-50 hover:border-brand-300 flex-shrink-0"
                 >
                   <Download className="h-4 w-4" />
+                  <span className="sr-only">Download {file.name}</span>
                 </Button>
               </div>
             ))}
@@ -98,7 +99,7 @@ export const LessonFiles = ({ lessonId }: LessonFilesProps) => {
         ) : (
           <div className="text-center py-8 text-gray-500">
             <File className="h-12 w-12 mx-auto mb-3 text-gray-300" />
-            <p>No additional resources for this lesson</p>
+            <p className="text-sm">No additional resources for this lesson</p>
           </div>
         )}
       </CardContent>

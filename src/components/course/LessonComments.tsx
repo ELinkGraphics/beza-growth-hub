@@ -31,7 +31,6 @@ export const LessonComments = ({ lessonId, lessonTitle }: LessonCommentsProps) =
     setIsSubmitting(true);
     try {
       // Here you would normally save the question to your database
-      // For now, we'll just simulate the submission
       await new Promise(resolve => setTimeout(resolve, 1000));
       
       toast({
@@ -53,21 +52,24 @@ export const LessonComments = ({ lessonId, lessonTitle }: LessonCommentsProps) =
   };
 
   return (
-    <Card className="mt-6">
+    <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
+        <CardTitle className="flex items-center gap-2 text-lg">
           <MessageCircle className="h-5 w-5" />
           Questions & Comments
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="text-center py-8">
-          <p className="text-gray-600 mb-4">
-            Have a question about this lesson? We're here to help!
-          </p>
+        <div className="text-center py-6 sm:py-8">
+          <div className="mb-4">
+            <MessageCircle className="h-12 w-12 mx-auto mb-3 text-gray-300" />
+            <p className="text-gray-600 text-sm sm:text-base mb-4">
+              Have a question about this lesson? We're here to help!
+            </p>
+          </div>
           <Button 
             onClick={() => setIsQuestionDialogOpen(true)}
-            className="bg-brand-500 hover:bg-brand-600"
+            className="bg-brand-500 hover:bg-brand-600 w-full sm:w-auto"
           >
             <MessageCircle className="h-4 w-4 mr-2" />
             Ask a Question
@@ -75,17 +77,17 @@ export const LessonComments = ({ lessonId, lessonTitle }: LessonCommentsProps) =
         </div>
 
         <Dialog open={isQuestionDialogOpen} onOpenChange={setIsQuestionDialogOpen}>
-          <DialogContent className="max-w-md">
+          <DialogContent className="max-w-md mx-4 sm:mx-auto">
             <DialogHeader>
-              <DialogTitle>Ask a Question</DialogTitle>
-              <DialogDescription>
+              <DialogTitle className="text-lg">Ask a Question</DialogTitle>
+              <DialogDescription className="text-sm">
                 Submit your question about this lesson and get help from our instructors.
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
-              <div>
-                <p className="text-sm text-gray-600 mb-2">
-                  Lesson: {lessonTitle}
+              <div className="p-3 bg-gray-50 rounded-lg">
+                <p className="text-sm text-gray-600 font-medium">
+                  Lesson: <span className="font-normal">{lessonTitle}</span>
                 </p>
               </div>
               <div>
@@ -97,18 +99,19 @@ export const LessonComments = ({ lessonId, lessonTitle }: LessonCommentsProps) =
                   className="resize-none"
                 />
               </div>
-              <div className="flex gap-2 justify-end">
+              <div className="flex flex-col sm:flex-row gap-2 sm:justify-end">
                 <Button
                   variant="outline"
                   onClick={() => setIsQuestionDialogOpen(false)}
                   disabled={isSubmitting}
+                  className="w-full sm:w-auto"
                 >
                   Cancel
                 </Button>
                 <Button
                   onClick={handleSubmitQuestion}
                   disabled={isSubmitting}
-                  className="bg-brand-500 hover:bg-brand-600"
+                  className="bg-brand-500 hover:bg-brand-600 w-full sm:w-auto"
                 >
                   {isSubmitting ? (
                     "Submitting..."
