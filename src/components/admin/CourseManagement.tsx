@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -9,9 +8,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Play, Plus, Edit, Trash2, Users, Award, Clock, Download, Eye } from "lucide-react";
+import { Play, Plus, Edit, Trash2, Users, Award, Clock, Download, Eye, BarChart3, MessageCircle, Settings } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { StudentProgressAnalytics } from "./StudentProgressAnalytics";
+import { StudentQuestions } from "./StudentQuestions";
+import { BulkOperations } from "./BulkOperations";
 
 interface CourseContent {
   id: string;
@@ -40,6 +42,7 @@ export const CourseManagement = () => {
   const [editingLesson, setEditingLesson] = useState<CourseContent | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState("content");
   const [stats, setStats] = useState({
     totalEnrollments: 0,
     completedCourses: 0,
@@ -189,14 +192,12 @@ export const CourseManagement = () => {
       setLoading(true);
       console.log('Saving lesson data:', lessonData);
       
-      // Check if user is authenticated
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
         throw new Error('User not authenticated');
       }
       
       if (editingLesson) {
-        // Update existing lesson
         const { data, error } = await supabase
           .from('course_content')
           .update({
@@ -218,7 +219,6 @@ export const CourseManagement = () => {
         console.log('Updated lesson:', data);
         toast({ title: "Success", description: "Lesson updated successfully." });
       } else {
-        // Create new lesson - get the next order index and lesson_id
         const { data: maxOrderData, error: maxOrderError } = await supabase
           .from('course_content')
           .select('order_index, lesson_id')
@@ -281,7 +281,6 @@ export const CourseManagement = () => {
       setLoading(true);
       console.log('Deleting lesson:', lessonId);
       
-      // Check if user is authenticated
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
         throw new Error('User not authenticated');
@@ -366,7 +365,6 @@ Congratulations on your achievement!
 Grow with Beza
     `;
 
-    // Create a modal-like dialog for viewing the certificate
     const newWindow = window.open('', '_blank', 'width=600,height=800');
     if (newWindow) {
       newWindow.document.write(`
@@ -408,7 +406,6 @@ Grow with Beza
       setLoading(true);
       console.log('Marking enrollment as completed:', enrollmentId);
       
-      // Check if user is authenticated
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
         throw new Error('User not authenticated');
@@ -444,7 +441,7 @@ Grow with Beza
 
   return (
     <div className="space-y-6">
-      {/* Stats Cards */}
+      {/* Enhanced Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card>
           <CardHeader className="pb-2">
@@ -483,10 +480,14 @@ Grow with Beza
         </Card>
       </div>
 
-      <Tabs defaultValue="content" className="w-full">
-        <TabsList>
+      {/* Enhanced Tabs with new sections */}
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="grid w-full grid-cols-2 lg:grid-cols-5">
           <TabsTrigger value="content">Course Content</TabsTrigger>
-          <TabsTrigger value="enrollments">Student Enrollments</TabsTrigger>
+          <TabsTrigger value="enrollments">Enrollments</TabsTrigger>
+          <TabsTrigger value="analytics">Analytics</TabsTrigger>
+          <TabsTrigger value="questions">Q&A Support</TabsTrigger>
+          <TabsTrigger value="bulk">Bulk Operations</TabsTrigger>
         </TabsList>
         
         <TabsContent value="content" className="space-y-4">
@@ -645,6 +646,18 @@ Grow with Beza
               </TableBody>
             </Table>
           </div>
+        </TabsContent>
+        
+        <TabsContent value="analytics" className="space-y-4">
+          <StudentProgressAnalytics />
+        </TabsContent>
+        
+        <TabsContent value="questions" className="space-y-4">
+          <StudentQuestions />
+        </TabsContent>
+        
+        <TabsContent value="bulk" className="space-y-4">
+          <BulkOperations />
         </TabsContent>
       </Tabs>
     </div>
