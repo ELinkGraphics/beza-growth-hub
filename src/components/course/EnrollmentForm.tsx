@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -8,12 +9,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 
 interface EnrollmentFormProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onSubmit: (data: { fullName: string; email: string; phone: string; enrollmentId: string }) => void;
+  courseId: string;
+  courseTitle: string;
+  onSuccess: () => void;
+  onCancel: () => void;
 }
 
-export const EnrollmentForm = ({ isOpen, onClose, onSubmit }: EnrollmentFormProps) => {
+export const EnrollmentForm = ({ courseId, courseTitle, onSuccess, onCancel }: EnrollmentFormProps) => {
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
@@ -35,7 +37,7 @@ export const EnrollmentForm = ({ isOpen, onClose, onSubmit }: EnrollmentFormProp
             student_name: formData.fullName,
             email: formData.email,
             phone: formData.phone,
-            course_id: 'personal-branding-fundamentals'
+            course_id: courseId
           })
           .select()
           .single();
@@ -46,13 +48,10 @@ export const EnrollmentForm = ({ isOpen, onClose, onSubmit }: EnrollmentFormProp
 
         toast({
           title: "Enrollment Successful!",
-          description: "Welcome to the course. Let's start learning!",
+          description: `Welcome to ${courseTitle}. Let's start learning!`,
         });
 
-        onSubmit({
-          ...formData,
-          enrollmentId: data.id
-        });
+        onSuccess();
       } catch (error) {
         console.error('Error enrolling student:', error);
         toast({
@@ -71,89 +70,89 @@ export const EnrollmentForm = ({ isOpen, onClose, onSubmit }: EnrollmentFormProp
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-md">
-        <DialogHeader>
-          <DialogTitle className="text-2xl font-bold text-center text-gray-800">
-            Complete Your Enrollment
-          </DialogTitle>
-        </DialogHeader>
-        
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="text-center text-gray-600 mb-6">
-            <p>Please provide your details to access the course and receive your certificate upon completion.</p>
+    <div className="space-y-6">
+      <div className="text-center text-gray-600 mb-6">
+        <p>Please provide your details to access <strong>{courseTitle}</strong> and receive your certificate upon completion.</p>
+      </div>
+
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div>
+          <Label htmlFor="fullName" className="text-sm font-medium text-gray-700">
+            Full Name *
+          </Label>
+          <div className="relative mt-1">
+            <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+            <Input
+              id="fullName"
+              type="text"
+              value={formData.fullName}
+              onChange={(e) => handleChange('fullName', e.target.value)}
+              placeholder="Enter your full name"
+              className="pl-10"
+              required
+            />
           </div>
+          <p className="text-xs text-gray-500 mt-1">This will appear on your certificate</p>
+        </div>
 
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="fullName" className="text-sm font-medium text-gray-700">
-                Full Name *
-              </Label>
-              <div className="relative mt-1">
-                <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-                <Input
-                  id="fullName"
-                  type="text"
-                  value={formData.fullName}
-                  onChange={(e) => handleChange('fullName', e.target.value)}
-                  placeholder="Enter your full name"
-                  className="pl-10"
-                  required
-                />
-              </div>
-              <p className="text-xs text-gray-500 mt-1">This will appear on your certificate</p>
-            </div>
-
-            <div>
-              <Label htmlFor="email" className="text-sm font-medium text-gray-700">
-                Email Address *
-              </Label>
-              <div className="relative mt-1">
-                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-                <Input
-                  id="email"
-                  type="email"
-                  value={formData.email}
-                  onChange={(e) => handleChange('email', e.target.value)}
-                  placeholder="Enter your email"
-                  className="pl-10"
-                  required
-                />
-              </div>
-            </div>
-
-            <div>
-              <Label htmlFor="phone" className="text-sm font-medium text-gray-700">
-                Phone Number *
-              </Label>
-              <div className="relative mt-1">
-                <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-                <Input
-                  id="phone"
-                  type="tel"
-                  value={formData.phone}
-                  onChange={(e) => handleChange('phone', e.target.value)}
-                  placeholder="Enter your phone number"
-                  className="pl-10"
-                  required
-                />
-              </div>
-            </div>
+        <div>
+          <Label htmlFor="email" className="text-sm font-medium text-gray-700">
+            Email Address *
+          </Label>
+          <div className="relative mt-1">
+            <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+            <Input
+              id="email"
+              type="email"
+              value={formData.email}
+              onChange={(e) => handleChange('email', e.target.value)}
+              placeholder="Enter your email"
+              className="pl-10"
+              required
+            />
           </div>
+        </div>
 
+        <div>
+          <Label htmlFor="phone" className="text-sm font-medium text-gray-700">
+            Phone Number *
+          </Label>
+          <div className="relative mt-1">
+            <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+            <Input
+              id="phone"
+              type="tel"
+              value={formData.phone}
+              onChange={(e) => handleChange('phone', e.target.value)}
+              placeholder="Enter your phone number"
+              className="pl-10"
+              required
+            />
+          </div>
+        </div>
+
+        <div className="flex gap-3 pt-4">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onCancel}
+            className="flex-1"
+          >
+            Cancel
+          </Button>
           <Button
             type="submit"
-            className="w-full bg-gradient-to-r from-brand-500 to-brand-600 hover:from-brand-600 hover:to-brand-700 text-white h-12 text-lg font-semibold"
+            className="flex-1 bg-gradient-to-r from-brand-500 to-brand-600 hover:from-brand-600 hover:to-brand-700 text-white"
             disabled={!formData.fullName || !formData.email || !formData.phone || isSubmitting}
           >
             {isSubmitting ? "Enrolling..." : "Start Learning Now"}
           </Button>
+        </div>
+      </form>
 
-          <div className="text-center text-xs text-gray-500">
-            By enrolling, you agree to receive course updates and communications.
-          </div>
-        </form>
-      </DialogContent>
-    </Dialog>
+      <div className="text-center text-xs text-gray-500">
+        By enrolling, you agree to receive course updates and communications.
+      </div>
+    </div>
   );
 };
