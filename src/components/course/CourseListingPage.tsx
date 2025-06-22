@@ -81,7 +81,7 @@ export const CourseListingPage = () => {
             .select('*', { count: 'exact', head: true })
             .eq('course_id', course.id);
 
-          // Get lesson count
+          // Get lesson count from course_content
           const { count: lessonCount } = await supabase
             .from('course_content')
             .select('*', { count: 'exact', head: true })
@@ -96,7 +96,7 @@ export const CourseListingPage = () => {
               .select('id')
               .eq('course_id', course.id)
               .eq('email', user.email)
-              .single();
+              .maybeSingle();
             
             isEnrolled = !!enrollmentData;
           }
