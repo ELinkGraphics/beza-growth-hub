@@ -53,7 +53,6 @@ export const EnhancedCourseManagement = () => {
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingCourse, setEditingCourse] = useState<Course | null>(null);
-  const [activeTab, setActiveTab] = useState("courses");
   const { toast } = useToast();
 
   const [courseForm, setCourseForm] = useState({
@@ -87,7 +86,10 @@ export const EnhancedCourseManagement = () => {
         `)
         .order('created_at', { ascending: false });
 
-      if (coursesError) throw coursesError;
+      if (coursesError) {
+        console.error('Error fetching courses:', coursesError);
+        throw coursesError;
+      }
 
       // Fetch enrollment counts for each course
       const coursesWithCounts = await Promise.all(
@@ -114,7 +116,10 @@ export const EnhancedCourseManagement = () => {
         .select('*')
         .order('name');
 
-      if (categoriesError) throw categoriesError;
+      if (categoriesError) {
+        console.error('Error fetching categories:', categoriesError);
+        throw categoriesError;
+      }
       setCategories(categoriesData || []);
 
       // Fetch instructors
@@ -123,7 +128,10 @@ export const EnhancedCourseManagement = () => {
         .select('*')
         .order('name');
 
-      if (instructorsError) throw instructorsError;
+      if (instructorsError) {
+        console.error('Error fetching instructors:', instructorsError);
+        throw instructorsError;
+      }
       setInstructors(instructorsData || []);
 
     } catch (error) {
@@ -143,8 +151,16 @@ export const EnhancedCourseManagement = () => {
     
     try {
       const courseData = {
-        ...courseForm,
-        price: courseForm.is_free ? 0 : courseForm.price
+        title: courseForm.title,
+        description: courseForm.description,
+        short_description: courseForm.short_description,
+        price: courseForm.is_free ? 0 : courseForm.price,
+        is_free: courseForm.is_free,
+        category_id: courseForm.category_id || null,
+        instructor_id: courseForm.instructor_id || null,
+        cover_image_url: courseForm.cover_image_url || null,
+        preview_video_url: courseForm.preview_video_url || null,
+        is_published: courseForm.is_published
       };
 
       if (editingCourse) {
@@ -153,7 +169,10 @@ export const EnhancedCourseManagement = () => {
           .update(courseData)
           .eq('id', editingCourse.id);
 
-        if (error) throw error;
+        if (error) {
+          console.error('Error updating course:', error);
+          throw error;
+        }
 
         toast({
           title: "Success",
@@ -164,7 +183,10 @@ export const EnhancedCourseManagement = () => {
           .from('courses')
           .insert([courseData]);
 
-        if (error) throw error;
+        if (error) {
+          console.error('Error creating course:', error);
+          throw error;
+        }
 
         toast({
           title: "Success",
@@ -180,7 +202,7 @@ export const EnhancedCourseManagement = () => {
       console.error('Error saving course:', error);
       toast({
         title: "Error",
-        description: "Failed to save course.",
+        description: "Failed to save course. Please check your permissions.",
         variant: "destructive",
       });
     }
@@ -190,8 +212,8 @@ export const EnhancedCourseManagement = () => {
     setEditingCourse(course);
     setCourseForm({
       title: course.title,
-      description: course.description,
-      short_description: course.short_description,
+      description: course.description || "",
+      short_description: course.short_description || "",
       price: course.price,
       is_free: course.is_free,
       category_id: course.category_id || "",
@@ -212,7 +234,10 @@ export const EnhancedCourseManagement = () => {
         .delete()
         .eq('id', courseId);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error deleting course:', error);
+        throw error;
+      }
 
       toast({
         title: "Success",
@@ -237,7 +262,10 @@ export const EnhancedCourseManagement = () => {
         .update({ is_published: !currentStatus })
         .eq('id', courseId);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error updating course status:', error);
+        throw error;
+      }
 
       toast({
         title: "Success",
@@ -377,59 +405,67 @@ export const EnhancedCourseManagement = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {courses.map((course) => (
-                  <TableRow key={course.id}>
-                    <TableCell>
-                      <div>
-                        <p className="font-medium">{course.title}</p>
-                        <p className="text-sm text-gray-500">{course.short_description}</p>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline">{course.category_name || 'Uncategorized'}</Badge>
-                    </TableCell>
-                    <TableCell>{course.instructor_name || 'No instructor'}</TableCell>
-                    <TableCell>
-                      {course.is_free ? (
-                        <Badge variant="secondary">Free</Badge>
-                      ) : (
-                        <span className="font-medium">${course.price}</span>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <span className="font-medium">{course.enrollment_count}</span>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center space-x-2">
-                        <Switch
-                          checked={course.is_published}
-                          onCheckedChange={() => togglePublished(course.id, course.is_published)}
-                        />
-                        <span className="text-sm">
-                          {course.is_published ? 'Published' : 'Draft'}
-                        </span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center space-x-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleEdit(course)}
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleDelete(course.id)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
+                {courses.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={7} className="text-center py-8">
+                      No courses found. Create your first course to get started.
                     </TableCell>
                   </TableRow>
-                ))}
+                ) : (
+                  courses.map((course) => (
+                    <TableRow key={course.id}>
+                      <TableCell>
+                        <div>
+                          <p className="font-medium">{course.title}</p>
+                          <p className="text-sm text-gray-500">{course.short_description}</p>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline">{course.category_name || 'Uncategorized'}</Badge>
+                      </TableCell>
+                      <TableCell>{course.instructor_name || 'No instructor'}</TableCell>
+                      <TableCell>
+                        {course.is_free ? (
+                          <Badge variant="secondary">Free</Badge>
+                        ) : (
+                          <span className="font-medium">${course.price}</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <span className="font-medium">{course.enrollment_count}</span>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center space-x-2">
+                          <Switch
+                            checked={course.is_published}
+                            onCheckedChange={() => togglePublished(course.id, course.is_published)}
+                          />
+                          <span className="text-sm">
+                            {course.is_published ? 'Published' : 'Draft'}
+                          </span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center space-x-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleEdit(course)}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleDelete(course.id)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
               </TableBody>
             </Table>
           </div>
@@ -447,11 +483,12 @@ export const EnhancedCourseManagement = () => {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="text-sm font-medium mb-2 block">Course Title</label>
+                <label className="text-sm font-medium mb-2 block">Course Title *</label>
                 <Input
                   value={courseForm.title}
                   onChange={(e) => setCourseForm({...courseForm, title: e.target.value})}
                   required
+                  placeholder="Enter course title"
                 />
               </div>
               <div>
@@ -489,6 +526,7 @@ export const EnhancedCourseManagement = () => {
                 value={courseForm.description}
                 onChange={(e) => setCourseForm({...courseForm, description: e.target.value})}
                 rows={4}
+                placeholder="Detailed course description"
               />
             </div>
 
@@ -545,8 +583,10 @@ export const EnhancedCourseManagement = () => {
                   <Input
                     type="number"
                     step="0.01"
+                    min="0"
                     value={courseForm.price}
                     onChange={(e) => setCourseForm({...courseForm, price: parseFloat(e.target.value) || 0})}
+                    placeholder="0.00"
                   />
                 </div>
               )}
