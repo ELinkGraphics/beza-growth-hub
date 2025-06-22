@@ -5,11 +5,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
-import { Plus, Edit, Trash2, Play, File, Upload } from "lucide-react";
+import { Plus, Edit, Trash2, File, Upload, BookOpen } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
@@ -23,6 +23,13 @@ interface Lesson {
   order_index: number;
   is_active: boolean;
   file_urls: string[];
+  course_id: string;
+}
+
+interface Course {
+  id: string;
+  title: string;
+  is_published: boolean;
 }
 
 interface QuizQuestion {
@@ -34,6 +41,8 @@ interface QuizQuestion {
 
 export const LessonManagement = () => {
   const [lessons, setLessons] = useState<Lesson[]>([]);
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [selectedCourseId, setSelectedCourseId] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [quizDialogOpen, setQuizDialogOpen] = useState(false);
@@ -47,7 +56,8 @@ export const LessonManagement = () => {
     video_url: "",
     duration: "",
     file_urls: [] as string[],
-    is_active: true
+    is_active: true,
+    course_id: ""
   });
 
   const [quizForm, setQuizForm] = useState({
@@ -61,22 +71,50 @@ export const LessonManagement = () => {
   });
 
   useEffect(() => {
-    fetchLessons();
+    fetchCourses();
   }, []);
 
+  useEffect(() => {
+    if (selectedCourseId) {
+      fetchLessons();
+    }
+  }, [selectedCourseId]);
+
+  const fetchCourses = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('courses')
+        .select('id, title, is_published')
+        .order('title');
+
+      if (error) throw error;
+      setCourses(data || []);
+      
+      if (data && data.length > 0 && !selectedCourseId) {
+        setSelectedCourseId(data[0].id);
+      }
+    } catch (error) {
+      console.error('Error fetching courses:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load courses.",
+        variant: "destructive",
+      });
+    }
+  };
+
   const fetchLessons = async () => {
+    if (!selectedCourseId) return;
+    
     try {
       setLoading(true);
       const { data, error } = await supabase
         .from('course_content')
         .select('*')
+        .eq('course_id', selectedCourseId)
         .order('order_index');
 
-      if (error) {
-        console.error('Error fetching lessons:', error);
-        throw error;
-      }
-
+      if (error) throw error;
       setLessons(data || []);
     } catch (error) {
       console.error('Error fetching lessons:', error);
@@ -93,6 +131,15 @@ export const LessonManagement = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    if (!selectedCourseId) {
+      toast({
+        title: "Error",
+        description: "Please select a course first.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     try {
       const lessonData = {
         title: lessonForm.title,
@@ -101,6 +148,7 @@ export const LessonManagement = () => {
         duration: lessonForm.duration,
         file_urls: lessonForm.file_urls,
         is_active: lessonForm.is_active,
+        course_id: selectedCourseId,
         order_index: editingLesson ? editingLesson.order_index : lessons.length + 1,
         lesson_id: editingLesson ? editingLesson.lesson_id : lessons.length + 1
       };
@@ -152,7 +200,8 @@ export const LessonManagement = () => {
       video_url: lesson.video_url,
       duration: lesson.duration,
       file_urls: lesson.file_urls || [],
-      is_active: lesson.is_active
+      is_active: lesson.is_active,
+      course_id: lesson.course_id
     });
     setDialogOpen(true);
   };
@@ -237,118 +286,177 @@ export const LessonManagement = () => {
       video_url: "",
       duration: "",
       file_urls: [],
-      is_active: true
+      is_active: true,
+      course_id: selectedCourseId
     });
   };
 
   const handleCreateNew = () => {
+    if (!selectedCourseId) {
+      toast({
+        title: "Error",
+        description: "Please select a course first.",
+        variant: "destructive",
+      });
+      return;
+    }
     setEditingLesson(null);
     resetForm();
     setDialogOpen(true);
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center p-8">
-        <p>Loading lessons...</p>
-      </div>
-    );
-  }
+  const selectedCourse = courses.find(c => c.id === selectedCourseId);
 
   return (
     <div className="space-y-6">
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
-            <CardTitle>Lesson Management</CardTitle>
-            <Button onClick={handleCreateNew}>
-              <Plus className="h-4 w-4 mr-2" />
-              Add Lesson
-            </Button>
+            <div>
+              <CardTitle className="flex items-center space-x-2">
+                <BookOpen className="h-5 w-5" />
+                <span>Lesson Management</span>
+              </CardTitle>
+              <p className="text-sm text-muted-foreground mt-1">
+                Manage lessons for each course individually
+              </p>
+            </div>
           </div>
         </CardHeader>
         <CardContent>
-          <div className="rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Order</TableHead>
-                  <TableHead>Title</TableHead>
-                  <TableHead>Duration</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Files</TableHead>
-                  <TableHead>Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {lessons.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={6} className="text-center py-8">
-                      No lessons found. Create your first lesson to get started.
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  lessons.map((lesson) => (
-                    <TableRow key={lesson.id}>
-                      <TableCell>
-                        <Badge variant="outline">{lesson.order_index}</Badge>
-                      </TableCell>
-                      <TableCell>
-                        <div>
-                          <p className="font-medium">{lesson.title}</p>
-                          <p className="text-sm text-gray-500 truncate max-w-xs">
-                            {lesson.description}
-                          </p>
-                        </div>
-                      </TableCell>
-                      <TableCell>{lesson.duration}</TableCell>
-                      <TableCell>
-                        <Badge variant={lesson.is_active ? "default" : "secondary"}>
-                          {lesson.is_active ? "Active" : "Inactive"}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center space-x-1">
-                          <File className="h-4 w-4" />
-                          <span className="text-sm">{lesson.file_urls?.length || 0}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell>
+          <div className="space-y-4">
+            <div className="flex items-center space-x-4">
+              <div className="flex-1">
+                <label className="text-sm font-medium mb-2 block">Select Course</label>
+                <Select value={selectedCourseId} onValueChange={setSelectedCourseId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Choose a course to manage lessons" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {courses.map((course) => (
+                      <SelectItem key={course.id} value={course.id}>
                         <div className="flex items-center space-x-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleEdit(lesson)}
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => {
-                              setSelectedLessonForQuiz(lesson);
-                              setQuizDialogOpen(true);
-                            }}
-                          >
-                            Quiz
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleDelete(lesson.id)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
+                          <span>{course.title}</span>
+                          {course.is_published && (
+                            <Badge variant="secondary" className="text-xs">Published</Badge>
+                          )}
                         </div>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="pt-6">
+                <Button onClick={handleCreateNew} disabled={!selectedCourseId}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Lesson
+                </Button>
+              </div>
+            </div>
+
+            {selectedCourse && (
+              <div className="bg-blue-50 p-4 rounded-lg">
+                <h3 className="font-medium text-blue-900">Managing lessons for: {selectedCourse.title}</h3>
+                <p className="text-sm text-blue-700">
+                  {lessons.length} lesson{lessons.length !== 1 ? 's' : ''} in this course
+                </p>
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>
+
+      {selectedCourseId && (
+        <Card>
+          <CardContent className="p-0">
+            <div className="rounded-md border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Order</TableHead>
+                    <TableHead>Title</TableHead>
+                    <TableHead>Duration</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Files</TableHead>
+                    <TableHead>Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {loading ? (
+                    <TableRow>
+                      <TableCell colSpan={6} className="text-center py-8">
+                        Loading lessons...
+                      </TableCell>
+                    </TableRow>
+                  ) : lessons.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={6} className="text-center py-8">
+                        No lessons found for this course. Create your first lesson to get started.
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    lessons.map((lesson) => (
+                      <TableRow key={lesson.id}>
+                        <TableCell>
+                          <Badge variant="outline">{lesson.order_index}</Badge>
+                        </TableCell>
+                        <TableCell>
+                          <div>
+                            <p className="font-medium">{lesson.title}</p>
+                            <p className="text-sm text-gray-500 truncate max-w-xs">
+                              {lesson.description}
+                            </p>
+                          </div>
+                        </TableCell>
+                        <TableCell>{lesson.duration}</TableCell>
+                        <TableCell>
+                          <Badge variant={lesson.is_active ? "default" : "secondary"}>
+                            {lesson.is_active ? "Active" : "Inactive"}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center space-x-1">
+                            <File className="h-4 w-4" />
+                            <span className="text-sm">{lesson.file_urls?.length || 0}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center space-x-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleEdit(lesson)}
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                setSelectedLessonForQuiz(lesson);
+                                setQuizDialogOpen(true);
+                              }}
+                            >
+                              Quiz
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleDelete(lesson.id)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Lesson Form Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
@@ -356,6 +464,11 @@ export const LessonManagement = () => {
           <DialogHeader>
             <DialogTitle>
               {editingLesson ? 'Edit Lesson' : 'Create New Lesson'}
+              {selectedCourse && (
+                <span className="text-sm font-normal text-muted-foreground ml-2">
+                  for {selectedCourse.title}
+                </span>
+              )}
             </DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4">

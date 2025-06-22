@@ -5,9 +5,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
-import { Play, Clock, Users, Star, CheckCircle, DollarSign } from "lucide-react";
+import { Play, Clock, Users, Star, CheckCircle, DollarSign, CreditCard } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import Navbar from "@/components/layout/Navbar";
+import Footer from "@/components/layout/Footer";
 
 interface Course {
   id: string;
@@ -80,41 +82,65 @@ export const CourseDetailPage = () => {
 
   const fetchCourseModules = async () => {
     try {
-      // Fetch sample modules and lessons
-      const sampleModules = [
-        {
-          id: "1",
-          title: "Introduction to Personal Branding",
-          description: "Learn the fundamentals of building your personal brand",
-          lessons: [
-            { id: "1", title: "What is Personal Branding?", duration: "8 minutes" },
-            { id: "2", title: "Why Personal Branding Matters", duration: "12 minutes" },
-            { id: "3", title: "Common Branding Mistakes", duration: "10 minutes" }
-          ]
-        },
-        {
-          id: "2",
-          title: "Building Your Brand Identity",
-          description: "Develop your unique brand voice and visual identity",
-          lessons: [
-            { id: "4", title: "Defining Your Brand Values", duration: "15 minutes" },
-            { id: "5", title: "Creating Your Brand Voice", duration: "20 minutes" },
-            { id: "6", title: "Visual Branding Basics", duration: "18 minutes" }
-          ]
-        },
-        {
-          id: "3",
-          title: "Digital Presence & Social Media",
-          description: "Establish and grow your online presence effectively",
-          lessons: [
-            { id: "7", title: "LinkedIn Optimization", duration: "25 minutes" },
-            { id: "8", title: "Content Strategy", duration: "30 minutes" },
-            { id: "9", title: "Engagement Best Practices", duration: "22 minutes" }
-          ]
-        }
-      ];
+      // Fetch actual lessons from the database
+      const { data: lessons, error } = await supabase
+        .from('course_content')
+        .select('*')
+        .eq('course_id', courseId)
+        .eq('is_active', true)
+        .order('order_index');
+
+      if (error) throw error;
+
+      // Group lessons into modules (simplified grouping by order)
+      const groupedModules: CourseModule[] = [];
+      let currentModule: CourseModule | null = null;
       
-      setModules(sampleModules);
+      lessons?.forEach((lesson, index) => {
+        // Create a new module every 3 lessons or for the first lesson
+        if (index % 3 === 0) {
+          if (currentModule) {
+            groupedModules.push(currentModule);
+          }
+          currentModule = {
+            id: `module-${Math.floor(index / 3) + 1}`,
+            title: `Module ${Math.floor(index / 3) + 1}`,
+            description: `Learning module covering ${lesson.title} and related topics`,
+            lessons: []
+          };
+        }
+        
+        if (currentModule) {
+          currentModule.lessons.push({
+            id: lesson.id,
+            title: lesson.title,
+            duration: lesson.duration
+          });
+        }
+      });
+      
+      // Add the last module if it exists
+      if (currentModule) {
+        groupedModules.push(currentModule);
+      }
+      
+      // If no lessons found, create sample modules
+      if (groupedModules.length === 0) {
+        const sampleModules = [
+          {
+            id: "1",
+            title: "Introduction to the Course",
+            description: "Get started with the fundamentals",
+            lessons: [
+              { id: "1", title: "Welcome and Course Overview", duration: "5 minutes" },
+              { id: "2", title: "Setting Your Learning Goals", duration: "10 minutes" }
+            ]
+          }
+        ];
+        setModules(sampleModules);
+      } else {
+        setModules(groupedModules);
+      }
     } catch (error) {
       console.error('Error fetching modules:', error);
     } finally {
@@ -122,17 +148,26 @@ export const CourseDetailPage = () => {
     }
   };
 
-  const handlePayment = async () => {
+  const simulatePayment = async () => {
     setProcessingPayment(true);
     try {
-      // Simulate payment processing
+      // Simulate payment processing with realistic steps
+      toast({
+        title: "Processing Payment...",
+        description: "Please wait while we process your payment.",
+      });
+
+      // Step 1: Validate payment details (simulated)
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Step 2: Process payment (simulated)
       await new Promise(resolve => setTimeout(resolve, 2000));
       
-      // Simulate successful enrollment
+      // Step 3: Create enrollment record
       const enrollmentData = {
         course_id: courseId,
-        student_name: "Current User", // In real app, get from auth
-        email: "user@example.com", // In real app, get from auth
+        student_name: "Demo Student", // In real app, get from auth
+        email: "demo@example.com", // In real app, get from auth
         phone: "123-456-7890", // In real app, get from form
         enrolled_at: new Date().toISOString()
       };
@@ -144,17 +179,17 @@ export const CourseDetailPage = () => {
       if (error) throw error;
 
       toast({
-        title: "Payment Successful!",
-        description: "You have been enrolled in the course. Redirecting to lessons...",
+        title: "Payment Successful! 🎉",
+        description: "Welcome to the course! Redirecting to your lessons...",
       });
 
-      // Redirect to lesson viewer
+      // Redirect to lesson viewer after successful payment
       setTimeout(() => {
         navigate(`/course-viewer/${courseId}`);
       }, 2000);
 
     } catch (error) {
-      console.error('Payment error:', error);
+      console.error('Payment simulation error:', error);
       toast({
         title: "Payment Failed",
         description: "There was an issue processing your payment. Please try again.",
@@ -169,8 +204,8 @@ export const CourseDetailPage = () => {
     try {
       const enrollmentData = {
         course_id: courseId,
-        student_name: "Current User", // In real app, get from auth
-        email: "user@example.com", // In real app, get from auth
+        student_name: "Demo Student", // In real app, get from auth
+        email: "demo@example.com", // In real app, get from auth
         phone: "123-456-7890", // In real app, get from form
         enrolled_at: new Date().toISOString()
       };
@@ -182,7 +217,7 @@ export const CourseDetailPage = () => {
       if (error) throw error;
 
       toast({
-        title: "Enrollment Successful!",
+        title: "Enrollment Successful! 🎉",
         description: "You have been enrolled in the course. Redirecting to lessons...",
       });
 
@@ -203,29 +238,44 @@ export const CourseDetailPage = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <p>Loading course details...</p>
+      <div className="min-h-screen bg-gray-50">
+        <Navbar />
+        <div className="flex items-center justify-center min-h-[50vh]">
+          <p className="text-lg">Loading course details...</p>
+        </div>
+        <Footer />
       </div>
     );
   }
 
   if (!course) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <p>Course not found.</p>
+      <div className="min-h-screen bg-gray-50">
+        <Navbar />
+        <div className="flex items-center justify-center min-h-[50vh]">
+          <div className="text-center">
+            <h2 className="text-2xl font-bold mb-2">Course not found</h2>
+            <p className="text-gray-600 mb-4">The course you're looking for doesn't exist.</p>
+            <Button onClick={() => navigate('/learn')}>
+              Browse Other Courses
+            </Button>
+          </div>
+        </div>
+        <Footer />
       </div>
     );
   }
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <Navbar />
       <div className="container mx-auto px-4 py-8">
         {/* Hero Section */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
           <div className="lg:col-span-2">
             <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
               <div className="flex items-center space-x-2 mb-4">
-                <Badge variant="outline">{course.category_name}</Badge>
+                <Badge variant="outline">{course.category_name || "General"}</Badge>
                 {course.is_free ? (
                   <Badge variant="secondary">Free</Badge>
                 ) : (
@@ -282,7 +332,7 @@ export const CourseDetailPage = () => {
           
           {/* Enrollment Card */}
           <div className="lg:col-span-1">
-            <div className="bg-white rounde-lg shadow-sm p-6 sticky top-6">
+            <div className="bg-white rounded-lg shadow-sm p-6 sticky top-6">
               {course.cover_image_url && (
                 <AspectRatio ratio={16 / 9} className="mb-4">
                   <img
@@ -310,20 +360,29 @@ export const CourseDetailPage = () => {
               <Button
                 className="w-full mb-4"
                 size="lg"
-                onClick={course.is_free ? handleFreeEnrollment : handlePayment}
+                onClick={course.is_free ? handleFreeEnrollment : simulatePayment}
                 disabled={processingPayment}
               >
                 {processingPayment ? (
-                  "Processing..."
+                  <>
+                    <CreditCard className="h-4 w-4 mr-2 animate-pulse" />
+                    Processing...
+                  </>
                 ) : course.is_free ? (
                   "Enroll for Free"
                 ) : (
                   <>
                     <DollarSign className="h-4 w-4 mr-2" />
-                    Pay Now
+                    Pay Now (Demo)
                   </>
                 )}
               </Button>
+              
+              {!course.is_free && (
+                <p className="text-xs text-center text-gray-500 mb-4">
+                  * This is a demo payment simulation
+                </p>
+              )}
               
               <div className="space-y-3 text-sm">
                 <div className="flex items-center space-x-2">
@@ -377,6 +436,7 @@ export const CourseDetailPage = () => {
           </div>
         </div>
       </div>
+      <Footer />
     </div>
   );
 };
