@@ -37,7 +37,7 @@ const Auth = () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
         if (session) {
-          navigate("/dashboard");
+          navigate("/student-dashboard");
         }
         setConnectionError(false);
       } catch (error) {
@@ -51,7 +51,7 @@ const Auth = () => {
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (session && event === 'SIGNED_IN') {
-        navigate("/dashboard");
+        navigate("/student-dashboard");
       }
     });
 
@@ -89,7 +89,7 @@ const Auth = () => {
           data: {
             full_name: signUpData.fullName,
           },
-          emailRedirectTo: `${window.location.origin}/dashboard`
+          emailRedirectTo: `${window.location.origin}/student-dashboard`
         }
       });
 

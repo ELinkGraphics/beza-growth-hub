@@ -78,11 +78,11 @@ export const AuthButton = () => {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-56" align="end" forceMount>
-        <DropdownMenuItem onClick={() => navigate("/dashboard")}>
+        <DropdownMenuItem onClick={() => navigate("/student-dashboard")}>
           <User className="mr-2 h-4 w-4" />
           Dashboard
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => navigate("/dashboard")}>
+        <DropdownMenuItem onClick={() => navigate("/student-dashboard")}>
           <Settings className="mr-2 h-4 w-4" />
           Settings
         </DropdownMenuItem>
