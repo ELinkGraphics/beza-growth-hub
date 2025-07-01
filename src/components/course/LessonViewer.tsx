@@ -20,6 +20,7 @@ interface LessonViewerProps {
   onClose: () => void;
   studentName: string;
   enrollmentId: string;
+  courseId?: string; // Add courseId prop to fetch course-specific data
 }
 
 interface CourseLesson {
@@ -31,6 +32,7 @@ interface CourseLesson {
   description: string;
   order_index: number;
   is_active: boolean;
+  course_id: string;
 }
 
 interface LessonProgress {
@@ -38,10 +40,17 @@ interface LessonProgress {
   completed_at: string | null;
 }
 
-export const LessonViewer = ({ isOpen, onClose, studentName, enrollmentId }: LessonViewerProps) => {
+interface Course {
+  id: string;
+  title: string;
+  description: string;
+}
+
+export const LessonViewer = ({ isOpen, onClose, studentName, enrollmentId, courseId }: LessonViewerProps) => {
   const [lessons, setLessons] = useState<CourseLesson[]>([]);
   const [currentLesson, setCurrentLesson] = useState<CourseLesson | null>(null);
   const [progress, setProgress] = useState<LessonProgress[]>([]);
+  const [course, setCourse] = useState<Course | null>(null);
   const [loading, setLoading] = useState(true);
   const [isMarkingComplete, setIsMarkingComplete] = useState(false);
   const [showCertificate, setShowCertificate] = useState(false);
@@ -51,7 +60,7 @@ export const LessonViewer = ({ isOpen, onClose, studentName, enrollmentId }: Les
 
   useEffect(() => {
     if (isOpen && enrollmentId) {
-      fetchLessons();
+      fetchCourseData();
       fetchProgress();
       
       // Set up real-time subscription for course content changes
@@ -63,7 +72,7 @@ export const LessonViewer = ({ isOpen, onClose, studentName, enrollmentId }: Les
           table: 'course_content' 
         }, (payload) => {
           console.log('Course content changed in lesson viewer:', payload);
-          fetchLessons();
+          fetchCourseData();
         })
         .subscribe();
 
@@ -71,31 +80,60 @@ export const LessonViewer = ({ isOpen, onClose, studentName, enrollmentId }: Les
         supabase.removeChannel(courseContentChannel);
       };
     }
-  }, [isOpen, enrollmentId]);
+  }, [isOpen, enrollmentId, courseId]);
 
-  const fetchLessons = async () => {
+  const fetchCourseData = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
+
+      // First, get the enrollment to find the course ID if not provided
+      let actualCourseId = courseId;
+      if (!actualCourseId) {
+        const { data: enrollmentData, error: enrollmentError } = await supabase
+          .from('course_enrollments')
+          .select('course_id')
+          .eq('id', enrollmentId)
+          .single();
+
+        if (enrollmentError) throw enrollmentError;
+        actualCourseId = enrollmentData.course_id;
+      }
+
+      // Fetch course information
+      const { data: courseData, error: courseError } = await supabase
+        .from('courses')
+        .select('*')
+        .eq('id', actualCourseId)
+        .single();
+
+      if (courseError && courseError.code !== 'PGRST116') {
+        console.error('Error fetching course:', courseError);
+      }
+
+      setCourse(courseData);
+
+      // Fetch lessons for this specific course
+      const { data: lessonsData, error: lessonsError } = await supabase
         .from('course_content')
         .select('*')
+        .eq('course_id', actualCourseId || 'personal-branding-fundamentals')
         .eq('is_active', true)
         .order('order_index');
 
-      if (error) {
-        console.error('Error fetching lessons:', error);
-        throw error;
+      if (lessonsError) {
+        console.error('Error fetching lessons:', lessonsError);
+        throw lessonsError;
       }
 
-      console.log('Fetched lessons for viewer:', data);
-      setLessons(data || []);
+      console.log('Fetched lessons for course:', actualCourseId, lessonsData);
+      setLessons(lessonsData || []);
       
       // Set current lesson based on progress (resume functionality)
-      if (data && data.length > 0) {
-        await setResumeLesson(data);
+      if (lessonsData && lessonsData.length > 0) {
+        await setResumeLesson(lessonsData);
       }
     } catch (error) {
-      console.error('Error fetching lessons:', error);
+      console.error('Error fetching course data:', error);
       toast({
         title: "Error",
         description: "Failed to load course content.",
@@ -246,7 +284,7 @@ export const LessonViewer = ({ isOpen, onClose, studentName, enrollmentId }: Les
           <div className="space-y-2 pr-2">
             {lessons.length === 0 ? (
               <p className="text-sm text-gray-500 text-center py-4">
-                No lessons available
+                No lessons available for this course
               </p>
             ) : (
               lessons.map((lesson, index) => (
@@ -296,7 +334,9 @@ export const LessonViewer = ({ isOpen, onClose, studentName, enrollmentId }: Les
         <DialogContent className="max-w-7xl h-[95vh] p-0 overflow-hidden flex flex-col">
           <DialogHeader className="p-6 pb-4 flex-shrink-0">
             <DialogTitle className="flex items-center justify-between flex-wrap gap-2">
-              <span className="text-lg sm:text-xl">Personal Branding Fundamentals Course</span>
+              <span className="text-lg sm:text-xl">
+                {course?.title || "Course Content"}
+              </span>
               <div className="flex items-center gap-2">
                 <Sheet open={isSidebarOpen} onOpenChange={setIsSidebarOpen}>
                   <SheetTrigger asChild>
@@ -314,7 +354,7 @@ export const LessonViewer = ({ isOpen, onClose, studentName, enrollmentId }: Les
               </div>
             </DialogTitle>
             <DialogDescription className="text-sm">
-              Continue your learning journey and track your progress through our comprehensive course.
+              Continue your learning journey and track your progress through the course.
             </DialogDescription>
           </DialogHeader>
           
@@ -431,7 +471,7 @@ export const LessonViewer = ({ isOpen, onClose, studentName, enrollmentId }: Les
                   ) : (
                     <div className="flex items-center justify-center py-12">
                       <div className="text-center">
-                        <p className="text-gray-500 mb-4">No lessons available at the moment.</p>
+                        <p className="text-gray-500 mb-4">No lessons available for this course.</p>
                         <p className="text-sm text-gray-400">New lessons will appear here when they are added.</p>
                       </div>
                     </div>
@@ -460,7 +500,7 @@ export const LessonViewer = ({ isOpen, onClose, studentName, enrollmentId }: Les
         isOpen={showCertificate}
         onClose={() => setShowCertificate(false)}
         studentName={studentName}
-        courseName="Personal Branding Fundamentals"
+        courseName={course?.title || "Course"}
         completionDate={new Date().toLocaleDateString()}
       />
     </>

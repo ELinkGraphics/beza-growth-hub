@@ -1,16 +1,17 @@
-
 import React, { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Calendar, Mail, ArrowLeft, Book, User, Settings, GraduationCap, PlayCircle, BarChart } from "lucide-react";
+import { Calendar, Mail, ArrowLeft, Book, User, Settings, GraduationCap, PlayCircle, BarChart, FolderOpen, HelpCircle } from "lucide-react";
 import { AppointmentsList } from "./AppointmentsList";
 import { ContactsList } from "./ContactsList";
 import { EnhancedCourseManagement } from "@/components/admin/EnhancedCourseManagement";
 import { LessonManagement } from "@/components/admin/LessonManagement";
 import { BulkOperations } from "@/components/admin/BulkOperations";
 import { AnalyticsDashboard } from "@/components/admin/AnalyticsDashboard";
+import { CategoryManagement } from "@/components/admin/CategoryManagement";
+import { QuizManagement } from "@/components/admin/QuizManagement";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import WebsiteCustomizer from "@/components/admin/WebsiteCustomizer";
@@ -262,34 +263,38 @@ const AdminDashboard = () => {
           className="w-full"
           onValueChange={(value) => setActiveTab(value)}
         >
-          <TabsList className="mb-6">
-            <TabsTrigger value="analytics" className="text-base">
-              <BarChart className="h-4 w-4 mr-2" />
+          <TabsList className="mb-6 grid w-full grid-cols-4 lg:grid-cols-8">
+            <TabsTrigger value="analytics" className="text-xs">
+              <BarChart className="h-4 w-4 mr-1" />
               Analytics
             </TabsTrigger>
-            <TabsTrigger value="courses" className="text-base">
-              <GraduationCap className="h-4 w-4 mr-2" />
-              Course Management
+            <TabsTrigger value="courses" className="text-xs">
+              <GraduationCap className="h-4 w-4 mr-1" />
+              Courses
             </TabsTrigger>
-            <TabsTrigger value="lessons" className="text-base">
-              <PlayCircle className="h-4 w-4 mr-2" />
-              Lesson Management
+            <TabsTrigger value="categories" className="text-xs">
+              <FolderOpen className="h-4 w-4 mr-1" />
+              Categories
             </TabsTrigger>
-            <TabsTrigger value="students" className="text-base">
-              <User className="h-4 w-4 mr-2" />
-              Student Operations
+            <TabsTrigger value="lessons" className="text-xs">
+              <PlayCircle className="h-4 w-4 mr-1" />
+              Lessons
             </TabsTrigger>
-            <TabsTrigger value="appointments" className="text-base">
-              <Calendar className="h-4 w-4 mr-2" />
+            <TabsTrigger value="quizzes" className="text-xs">
+              <HelpCircle className="h-4 w-4 mr-1" />
+              Quizzes
+            </TabsTrigger>
+            <TabsTrigger value="students" className="text-xs">
+              <User className="h-4 w-4 mr-1" />
+              Students
+            </TabsTrigger>
+            <TabsTrigger value="appointments" className="text-xs">
+              <Calendar className="h-4 w-4 mr-1" />
               Appointments
             </TabsTrigger>
-            <TabsTrigger value="contacts" className="text-base">
-              <Mail className="h-4 w-4 mr-2" />
-              Contact Messages
-            </TabsTrigger>
-            <TabsTrigger value="website" className="text-base">
-              <Settings className="h-4 w-4 mr-2" />
-              Website Customization
+            <TabsTrigger value="contacts" className="text-xs">
+              <Mail className="h-4 w-4 mr-1" />
+              Messages
             </TabsTrigger>
           </TabsList>
           
@@ -301,8 +306,16 @@ const AdminDashboard = () => {
             <EnhancedCourseManagement />
           </TabsContent>
 
+          <TabsContent value="categories">
+            <CategoryManagement />
+          </TabsContent>
+
           <TabsContent value="lessons">
             <LessonManagement />
+          </TabsContent>
+
+          <TabsContent value="quizzes">
+            <QuizManagement />
           </TabsContent>
 
           <TabsContent value="students">
@@ -315,10 +328,6 @@ const AdminDashboard = () => {
           
           <TabsContent value="contacts">
             <ContactsList />
-          </TabsContent>
-          
-          <TabsContent value="website">
-            <WebsiteCustomizer />
           </TabsContent>
         </Tabs>
       </div>
