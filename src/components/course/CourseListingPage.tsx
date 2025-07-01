@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { EnrollmentForm } from "./EnrollmentForm";
+import { GuestLearningModal } from "@/components/learning/GuestLearningModal";
 
 interface Course {
   id: string;
@@ -166,13 +166,11 @@ export const CourseListingPage = () => {
     setFilteredCourses(filtered);
   };
 
-  const handleEnroll = (course: Course) => {
+  const handleEnroll = async (course: Course) => {
     if (!user) {
-      toast({
-        title: "Authentication Required",
-        description: "Please sign in to enroll in courses.",
-        variant: "destructive",
-      });
+      // Show guest learning modal for non-authenticated users
+      setSelectedCourse(course);
+      setShowEnrollment(true);
       return;
     }
 
@@ -182,12 +180,77 @@ export const CourseListingPage = () => {
       return;
     }
 
+    // For authenticated users, enroll directly without modal
     if (course.is_free) {
-      setSelectedCourse(course);
-      setShowEnrollment(true);
+      await enrollUserDirectly(course);
     } else {
       // Handle paid course enrollment
       handlePaidEnrollment(course);
+    }
+  };
+
+  const enrollUserDirectly = async (course: Course) => {
+    try {
+      // Get user info from auth
+      const userEmail = user?.email;
+      const userName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User';
+      
+      if (!userEmail) {
+        toast({
+          title: "Error",
+          description: "Unable to get user information. Please try signing in again.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Check if already enrolled
+      const { data: existingEnrollment } = await supabase
+        .from('course_enrollments')
+        .select('id')
+        .eq('course_id', course.id)
+        .eq('email', userEmail)
+        .maybeSingle();
+
+      if (existingEnrollment) {
+        toast({
+          title: "Already Enrolled",
+          description: "You are already enrolled in this course!",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Insert enrollment
+      const { data, error } = await supabase
+        .from('course_enrollments')
+        .insert({
+          student_name: userName,
+          email: userEmail,
+          phone: '', // We can make this optional or get from user profile
+          course_id: course.id
+        })
+        .select()
+        .single();
+
+      if (error) {
+        throw error;
+      }
+
+      toast({
+        title: "Enrollment Successful!",
+        description: `Welcome to ${course.title}. Let's start learning!`,
+      });
+
+      // Refresh courses to show enrollment status
+      fetchCourses();
+    } catch (error) {
+      console.error('Error enrolling user:', error);
+      toast({
+        title: "Enrollment Failed",
+        description: "Please try again or contact support.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -374,8 +437,32 @@ export const CourseListingPage = () => {
         </div>
       )}
 
-      {/* Enrollment Modal */}
-      {selectedCourse && (
+      {/* Guest Enrollment Modal (only for non-authenticated users) */}
+      {selectedCourse && !user && (
+        <Dialog open={showEnrollment} onOpenChange={setShowEnrollment}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Continue Learning</DialogTitle>
+            </DialogHeader>
+            <GuestLearningModal
+              isOpen={showEnrollment}
+              onClose={() => setShowEnrollment(false)}
+              onGuestContinue={(email) => {
+                // Handle guest enrollment with just email
+                console.log('Guest enrollment:', email);
+                setShowEnrollment(false);
+              }}
+              onCreateAccount={(email, name) => {
+                // Redirect to auth page with pre-filled data
+                window.location.href = '/auth';
+              }}
+            />
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {/* Traditional Enrollment Form (fallback) */}
+      {selectedCourse && user && (
         <Dialog open={showEnrollment} onOpenChange={setShowEnrollment}>
           <DialogContent className="max-w-md">
             <DialogHeader>
@@ -386,7 +473,7 @@ export const CourseListingPage = () => {
               courseTitle={selectedCourse.title}
               onSuccess={() => {
                 setShowEnrollment(false);
-                fetchCourses(); // Refresh to show enrollment status
+                fetchCourses();
               }}
               onCancel={() => setShowEnrollment(false)}
             />
