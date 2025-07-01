@@ -19,6 +19,8 @@ interface Course {
   cover_image_url?: string;
   category_id?: string;
   instructor_id?: string;
+  created_at?: string;
+  updated_at?: string;
   category_name?: string;
   instructor_name?: string;
   enrollment_count?: number;
