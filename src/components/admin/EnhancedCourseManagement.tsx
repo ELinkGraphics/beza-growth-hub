@@ -8,9 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
-import { Plus, Edit, Trash2, Eye, DollarSign, Users, BookOpen, Award } from "lucide-react";
+import { Plus, Edit, Trash2, Eye, DollarSign, Users, BookOpen, Upload } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
@@ -53,6 +52,8 @@ export const EnhancedCourseManagement = () => {
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingCourse, setEditingCourse] = useState<Course | null>(null);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [uploading, setUploading] = useState(false);
   const { toast } = useToast();
 
   const [courseForm, setCourseForm] = useState({
@@ -86,10 +87,7 @@ export const EnhancedCourseManagement = () => {
         `)
         .order('created_at', { ascending: false });
 
-      if (coursesError) {
-        console.error('Error fetching courses:', coursesError);
-        throw coursesError;
-      }
+      if (coursesError) throw coursesError;
 
       // Fetch enrollment counts for each course
       const coursesWithCounts = await Promise.all(
@@ -116,10 +114,7 @@ export const EnhancedCourseManagement = () => {
         .select('*')
         .order('name');
 
-      if (categoriesError) {
-        console.error('Error fetching categories:', categoriesError);
-        throw categoriesError;
-      }
+      if (categoriesError) throw categoriesError;
       setCategories(categoriesData || []);
 
       // Fetch instructors
@@ -128,10 +123,7 @@ export const EnhancedCourseManagement = () => {
         .select('*')
         .order('name');
 
-      if (instructorsError) {
-        console.error('Error fetching instructors:', instructorsError);
-        throw instructorsError;
-      }
+      if (instructorsError) throw instructorsError;
       setInstructors(instructorsData || []);
 
     } catch (error) {
@@ -146,10 +138,51 @@ export const EnhancedCourseManagement = () => {
     }
   };
 
+  const uploadImage = async (file: File): Promise<string | null> => {
+    try {
+      setUploading(true);
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${crypto.randomUUID()}.${fileExt}`;
+      const filePath = `course-covers/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('course-materials')
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('course-materials')
+        .getPublicUrl(filePath);
+
+      return publicUrl;
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      toast({
+        title: "Upload Error",
+        description: "Failed to upload image.",
+        variant: "destructive",
+      });
+      return null;
+    } finally {
+      setUploading(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     try {
+      let coverImageUrl = courseForm.cover_image_url;
+
+      // Upload image if file is selected
+      if (imageFile) {
+        const uploadedUrl = await uploadImage(imageFile);
+        if (uploadedUrl) {
+          coverImageUrl = uploadedUrl;
+        }
+      }
+
       const courseData = {
         title: courseForm.title,
         description: courseForm.description,
@@ -158,7 +191,7 @@ export const EnhancedCourseManagement = () => {
         is_free: courseForm.is_free,
         category_id: courseForm.category_id || null,
         instructor_id: courseForm.instructor_id || null,
-        cover_image_url: courseForm.cover_image_url || null,
+        cover_image_url: coverImageUrl || null,
         preview_video_url: courseForm.preview_video_url || null,
         is_published: courseForm.is_published
       };
@@ -169,10 +202,7 @@ export const EnhancedCourseManagement = () => {
           .update(courseData)
           .eq('id', editingCourse.id);
 
-        if (error) {
-          console.error('Error updating course:', error);
-          throw error;
-        }
+        if (error) throw error;
 
         toast({
           title: "Success",
@@ -183,10 +213,7 @@ export const EnhancedCourseManagement = () => {
           .from('courses')
           .insert([courseData]);
 
-        if (error) {
-          console.error('Error creating course:', error);
-          throw error;
-        }
+        if (error) throw error;
 
         toast({
           title: "Success",
@@ -196,13 +223,14 @@ export const EnhancedCourseManagement = () => {
 
       setDialogOpen(false);
       setEditingCourse(null);
+      setImageFile(null);
       resetForm();
       fetchData();
     } catch (error) {
       console.error('Error saving course:', error);
       toast({
         title: "Error",
-        description: "Failed to save course. Please check your permissions.",
+        description: "Failed to save course.",
         variant: "destructive",
       });
     }
@@ -234,10 +262,7 @@ export const EnhancedCourseManagement = () => {
         .delete()
         .eq('id', courseId);
 
-      if (error) {
-        console.error('Error deleting course:', error);
-        throw error;
-      }
+      if (error) throw error;
 
       toast({
         title: "Success",
@@ -262,10 +287,7 @@ export const EnhancedCourseManagement = () => {
         .update({ is_published: !currentStatus })
         .eq('id', courseId);
 
-      if (error) {
-        console.error('Error updating course status:', error);
-        throw error;
-      }
+      if (error) throw error;
 
       toast({
         title: "Success",

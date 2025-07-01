@@ -4,12 +4,13 @@ import { useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Calendar, Mail, ArrowLeft, Book, User, Settings, GraduationCap, PlayCircle } from "lucide-react";
+import { Calendar, Mail, ArrowLeft, Book, User, Settings, GraduationCap, PlayCircle, BarChart } from "lucide-react";
 import { AppointmentsList } from "./AppointmentsList";
 import { ContactsList } from "./ContactsList";
 import { EnhancedCourseManagement } from "@/components/admin/EnhancedCourseManagement";
 import { LessonManagement } from "@/components/admin/LessonManagement";
 import { BulkOperations } from "@/components/admin/BulkOperations";
+import { AnalyticsDashboard } from "@/components/admin/AnalyticsDashboard";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import WebsiteCustomizer from "@/components/admin/WebsiteCustomizer";
@@ -257,11 +258,15 @@ const AdminDashboard = () => {
         
         {/* Tabs for different sections */}
         <Tabs 
-          defaultValue="courses"
+          defaultValue="analytics"
           className="w-full"
           onValueChange={(value) => setActiveTab(value)}
         >
           <TabsList className="mb-6">
+            <TabsTrigger value="analytics" className="text-base">
+              <BarChart className="h-4 w-4 mr-2" />
+              Analytics
+            </TabsTrigger>
             <TabsTrigger value="courses" className="text-base">
               <GraduationCap className="h-4 w-4 mr-2" />
               Course Management
@@ -287,6 +292,10 @@ const AdminDashboard = () => {
               Website Customization
             </TabsTrigger>
           </TabsList>
+          
+          <TabsContent value="analytics">
+            <AnalyticsDashboard />
+          </TabsContent>
           
           <TabsContent value="courses">
             <EnhancedCourseManagement />

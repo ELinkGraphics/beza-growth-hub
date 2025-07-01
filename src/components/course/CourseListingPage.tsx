@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -75,13 +76,13 @@ export const CourseListingPage = () => {
       // Enhance courses with additional data
       const enhancedCourses = await Promise.all(
         (coursesData || []).map(async (course) => {
-          // Get enrollment count
+          // Get enrollment count using UUID course ID
           const { count: enrollmentCount } = await supabase
             .from('course_enrollments')
             .select('*', { count: 'exact', head: true })
             .eq('course_id', course.id);
 
-          // Get lesson count from course_content
+          // Get lesson count from course_content using UUID course ID
           const { count: lessonCount } = await supabase
             .from('course_content')
             .select('*', { count: 'exact', head: true })
@@ -221,14 +222,14 @@ export const CourseListingPage = () => {
         return;
       }
 
-      // Insert enrollment
+      // Insert enrollment with proper UUID course ID
       const { data, error } = await supabase
         .from('course_enrollments')
         .insert({
           student_name: userName,
           email: userEmail,
           phone: '', // We can make this optional or get from user profile
-          course_id: course.id
+          course_id: course.id // Using UUID course ID
         })
         .select()
         .single();
