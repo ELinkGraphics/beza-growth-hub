@@ -95,7 +95,7 @@ export const EnhancedCourseViewer = ({ courseId, userEmail }: EnhancedCourseView
   }
 
   const isEnrolled = !!enrollment;
-  const isCompleted = enrollment?.completed_at;
+  const isCompleted = !!enrollment?.completed_at;
   const canReview = isEnrolled && isCompleted;
 
   return (
@@ -128,7 +128,13 @@ export const EnhancedCourseViewer = ({ courseId, userEmail }: EnhancedCourseView
 
         <TabsContent value="lessons" className="space-y-6">
           {isEnrolled ? (
-            <LessonViewer courseId={courseId} />
+            <LessonViewer 
+              isOpen={true}
+              onClose={() => {}}
+              studentName={enrollment?.student_name || "Student"}
+              enrollmentId={enrollment?.id || ""}
+              courseId={courseId}
+            />
           ) : (
             <Card>
               <CardContent className="text-center py-12">
@@ -143,7 +149,11 @@ export const EnhancedCourseViewer = ({ courseId, userEmail }: EnhancedCourseView
 
         <TabsContent value="quizzes" className="space-y-6">
           {isEnrolled ? (
-            <QuizModal courseId={courseId} />
+            <QuizModal 
+              isOpen={true}
+              onClose={() => {}}
+              lessonTitle="Course Quizzes"
+            />
           ) : (
             <Card>
               <CardContent className="text-center py-12">
