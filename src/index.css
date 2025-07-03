@@ -18,6 +18,7 @@
 
     --primary: 180 100% 34%;
     --primary-foreground: 210 40% 98%;
+    --primary-hover: 180 85% 38%;
 
     --secondary: 210 40% 96.1%;
     --secondary-foreground: 222.2 47.4% 11.2%;
@@ -27,6 +28,7 @@
 
     --accent: 30 87% 49%;
     --accent-foreground: 0 0% 98%;
+    --accent-hover: 30 75% 55%;
 
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
@@ -35,7 +37,20 @@
     --input: 214.3 31.8% 91.4%;
     --ring: 180 90% 34%;
 
-    --radius: 0.5rem;
+    --radius: 0.75rem;
+    --radius-sm: 0.5rem;
+    --radius-lg: 1rem;
+
+    /* Enhanced gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(180 100% 34%), hsl(180 85% 42%));
+    --gradient-secondary: linear-gradient(135deg, hsl(30 87% 49%), hsl(30 75% 55%));
+    --gradient-subtle: linear-gradient(180deg, hsl(204 30% 99%), hsl(204 30% 96%));
+
+    /* Enhanced shadows */
+    --shadow-soft: 0 2px 8px -2px hsl(200 20% 20% / 0.08);
+    --shadow-medium: 0 4px 16px -4px hsl(200 20% 20% / 0.12);
+    --shadow-large: 0 8px 32px -8px hsl(200 20% 20% / 0.16);
+    --shadow-glow: 0 0 24px hsl(180 100% 34% / 0.15);
 
     --sidebar-background: 0 0% 98%;
     --sidebar-foreground: 240 5.3% 26.1%;

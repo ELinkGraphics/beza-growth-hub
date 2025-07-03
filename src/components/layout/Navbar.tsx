@@ -5,50 +5,63 @@ import { AuthButton } from "@/components/auth/AuthButton";
 
 const Navbar = () => {
   return (
-    <nav className="bg-white shadow-md">
-      <div className="container mx-auto px-6 py-3 flex items-center justify-between">
+    <nav className="bg-background/95 backdrop-blur-sm border-b border-border/50 shadow-soft sticky top-0 z-50">
+      <div className="container mx-auto px-6 py-4 flex items-center justify-between">
         {/* Logo Section */}
-        <div className="text-xl font-bold text-brand-500">
-          <Link to="/">Grow with Beza</Link>
+        <div className="text-2xl font-heading font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+          <Link to="/" className="hover:opacity-80 transition-opacity">
+            Grow with Beza
+          </Link>
         </div>
 
         {/* Navigation Links */}
-        <div className="hidden md:flex space-x-6">
-          <Link to="/" className="hover:text-brand-500">
+        <div className="hidden md:flex items-center space-x-8">
+          <Link to="/" className="relative font-medium text-foreground hover:text-primary transition-colors group">
             Home
+            <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-primary to-accent transition-all duration-300 group-hover:w-full"></span>
           </Link>
-          <Link to="/about" className="hover:text-brand-500">
+          <Link to="/about" className="relative font-medium text-foreground hover:text-primary transition-colors group">
             About
+            <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-primary to-accent transition-all duration-300 group-hover:w-full"></span>
           </Link>
-          <Link to="/learn" className="hover:text-brand-500">
+          <Link to="/learn" className="relative font-medium text-foreground hover:text-primary transition-colors group">
             Learn
+            <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-primary to-accent transition-all duration-300 group-hover:w-full"></span>
           </Link>
-          <Link to="/services" className="hover:text-brand-500">
+          <Link to="/services" className="relative font-medium text-foreground hover:text-primary transition-colors group">
             Services
+            <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-primary to-accent transition-all duration-300 group-hover:w-full"></span>
           </Link>
-          <Link to="/blog" className="hover:text-brand-500">
+          <Link to="/blog" className="relative font-medium text-foreground hover:text-primary transition-colors group">
             Blog
+            <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-primary to-accent transition-all duration-300 group-hover:w-full"></span>
           </Link>
-          <Link to="/faq" className="hover:text-brand-500">
+          <Link to="/faq" className="relative font-medium text-foreground hover:text-primary transition-colors group">
             FAQ
+            <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-primary to-accent transition-all duration-300 group-hover:w-full"></span>
           </Link>
-          <Link to="/contact" className="hover:text-brand-500">
+          <Link to="/contact" className="relative font-medium text-foreground hover:text-primary transition-colors group">
             Contact
+            <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-primary to-accent transition-all duration-300 group-hover:w-full"></span>
           </Link>
-          <Link to="/book" className="hover:text-brand-500">
+          <Link to="/book" className="relative font-medium text-foreground hover:text-primary transition-colors group">
             Book
+            <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-primary to-accent transition-all duration-300 group-hover:w-full"></span>
           </Link>
         </div>
 
         {/* Auth Section */}
-        <div>
+        <div className="flex items-center space-x-4">
           <AuthButton />
         </div>
 
         {/* Mobile Menu (Hidden by default) */}
         <div className="md:hidden">
-          {/* Add mobile menu icon here */}
-          <Button variant="ghost">Menu</Button>
+          <Button variant="ghost" size="icon">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+          </Button>
         </div>
       </div>
     </nav>

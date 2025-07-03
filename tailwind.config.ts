@@ -27,7 +27,8 @@ export default {
 				foreground: 'hsl(var(--foreground))',
 				primary: {
 					DEFAULT: 'hsl(var(--primary))',
-					foreground: 'hsl(var(--primary-foreground))'
+					foreground: 'hsl(var(--primary-foreground))',
+					hover: 'hsl(var(--primary-hover))'
 				},
 				secondary: {
 					DEFAULT: 'hsl(var(--secondary))',
@@ -43,7 +44,8 @@ export default {
 				},
 				accent: {
 					DEFAULT: 'hsl(var(--accent))',
-					foreground: 'hsl(var(--accent-foreground))'
+					foreground: 'hsl(var(--accent-foreground))',
+					hover: 'hsl(var(--accent-hover))'
 				},
 				popover: {
 					DEFAULT: 'hsl(var(--popover))',
@@ -74,19 +76,13 @@ export default {
                     700: '#006969',
                     800: '#004646',
                     900: '#002323',
-                },
-                accent: {
-                    50: '#fdf3e7',
-                    100: '#fbe8cf',
-                    200: '#f7d09f',
-                    300: '#f4b96f',
-                    400: '#f0a13f',
-                    500: '#ec8a0f',
-                    600: '#bd6e0c',
-                    700: '#8d5209',
-                    800: '#5e3706',
-                    900: '#2f1b03',
                 }
+			},
+			boxShadow: {
+				'soft': 'var(--shadow-soft)',
+				'medium': 'var(--shadow-medium)',
+				'large': 'var(--shadow-large)',
+				'glow': 'var(--shadow-glow)'
 			},
 			borderRadius: {
 				lg: 'var(--radius)',
