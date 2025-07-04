@@ -2,6 +2,7 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { AuthButton } from "@/components/auth/AuthButton";
+import MobileNav from "@/components/ui/mobile-nav";
 
 const Navbar = () => {
   return (
@@ -55,13 +56,9 @@ const Navbar = () => {
           <AuthButton />
         </div>
 
-        {/* Mobile Menu (Hidden by default) */}
+        {/* Mobile Navigation */}
         <div className="md:hidden">
-          <Button variant="ghost" size="icon">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-            </svg>
-          </Button>
+          <MobileNav />
         </div>
       </div>
     </nav>

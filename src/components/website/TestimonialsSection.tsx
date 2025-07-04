@@ -3,6 +3,7 @@ import React from "react";
 import { useWebsiteContent } from "@/hooks/use-website-content";
 import TestimonialCard from "@/components/ui/testimonial-card";
 import { Button } from "@/components/ui/button";
+import { ArrowRight } from "lucide-react";
 
 const TestimonialsSection = () => {
   const { content, loading } = useWebsiteContent("testimonials");
@@ -58,36 +59,71 @@ const TestimonialsSection = () => {
   const testimonialsContent = content || defaultContent;
 
   return (
-    <section className="py-24 bg-gradient-to-b from-white to-gray-50">
-      <div className="container mx-auto px-4">
-        <div className="text-center mb-16">
-          <h2 className="text-3xl md:text-4xl font-bold text-gray-800 mb-4">{testimonialsContent.title}</h2>
-          <p className="text-xl text-gray-600 max-w-3xl mx-auto">{testimonialsContent.subtitle}</p>
+    <section className="py-24 bg-background relative overflow-hidden">
+      <div className="absolute inset-0 bg-gradient-to-b from-background to-muted/30"></div>
+      
+      <div className="container mx-auto px-6 relative z-10">
+        <div className="text-center mb-20">
+          <h2 className="text-4xl md:text-5xl font-bold font-heading text-foreground mb-6">
+            <span className="bg-gradient-primary bg-clip-text text-transparent">
+              {testimonialsContent.title}
+            </span>
+          </h2>
+          <p className="text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
+            {testimonialsContent.subtitle}
+          </p>
         </div>
         
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
           {testimonialsContent.testimonials.map((testimonial, index) => (
             <div 
               key={testimonial.id}
-              className="animate-slide-up"
+              className="group animate-fade-in"
               style={{ animationDelay: `${index * 200}ms` }}
             >
-              <TestimonialCard
-                quote={testimonial.quote}
-                name={testimonial.name}
-                role={testimonial.role}
-                avatarUrl={testimonial.avatarUrl}
-              />
+              <div className="bg-card rounded-2xl p-8 shadow-soft hover:shadow-medium transition-all duration-300 hover:-translate-y-2 border border-border/50 h-full">
+                <div className="flex flex-col h-full">
+                  <div className="flex-1 mb-6">
+                    <div className="text-primary mb-4">
+                      {[...Array(5)].map((_, i) => (
+                        <span key={i} className="text-xl">★</span>
+                      ))}
+                    </div>
+                    <blockquote className="text-muted-foreground leading-relaxed italic">
+                      "{testimonial.quote}"
+                    </blockquote>
+                  </div>
+                  
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 bg-gradient-primary rounded-full flex items-center justify-center">
+                      <span className="text-primary-foreground font-semibold text-lg">
+                        {testimonial.name.charAt(0)}
+                      </span>
+                    </div>
+                    <div>
+                      <div className="font-semibold text-foreground">{testimonial.name}</div>
+                      <div className="text-sm text-muted-foreground">{testimonial.role}</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           ))}
         </div>
         
-        <div className="mt-16 text-center">
-          <Button variant="outline" className="border-brand-500 text-brand-500 hover:bg-brand-50">
-            View All Testimonials
+        <div className="text-center">
+          <Button variant="elegant" size="lg" className="group">
+            <span className="flex items-center gap-2">
+              View All Testimonials
+              <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
+            </span>
           </Button>
         </div>
       </div>
+      
+      {/* Background decoration */}
+      <div className="absolute top-1/4 right-10 w-40 h-40 bg-primary/5 rounded-full blur-3xl"></div>
+      <div className="absolute bottom-1/4 left-10 w-60 h-60 bg-accent/5 rounded-full blur-3xl"></div>
     </section>
   );
 };
