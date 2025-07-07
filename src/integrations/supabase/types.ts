@@ -129,7 +129,7 @@ export type Database = {
         }
         Insert: {
           content_type?: string | null
-          course_id?: string
+          course_id: string
           created_at?: string
           description?: string | null
           duration: string
@@ -167,6 +167,13 @@ export type Database = {
             referencedRelation: "course_modules"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "fk_course_content_course_id"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
         ]
       }
       course_enrollments: {
@@ -183,7 +190,7 @@ export type Database = {
         Insert: {
           certificate_generated?: boolean
           completed_at?: string | null
-          course_id?: string
+          course_id: string
           email: string
           enrolled_at?: string
           id?: string
@@ -200,7 +207,15 @@ export type Database = {
           phone?: string
           student_name?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fk_course_enrollments_course_id"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       course_modules: {
         Row: {
