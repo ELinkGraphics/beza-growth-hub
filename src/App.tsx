@@ -21,6 +21,7 @@ import Learn from "./pages/Learn";
 import StudentDashboard from "./pages/StudentDashboard";
 import CourseViewer from "./pages/CourseViewer";
 import { CourseDetailPage } from "./components/course/CourseDetailPage";
+import PaymentSuccess from "./pages/PaymentSuccess";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -49,6 +50,7 @@ const App = () => (
             <Route path="/student-dashboard" element={<StudentDashboard />} />
             <Route path="/course/:courseId" element={<CourseDetailPage />} />
             <Route path="/course-viewer/:courseId" element={<CourseViewer />} />
+            <Route path="/payment-success" element={<PaymentSuccess />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
