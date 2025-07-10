@@ -110,6 +110,51 @@ export type Database = {
         }
         Relationships: []
       }
+      course_certificates: {
+        Row: {
+          certificate_url: string | null
+          completion_percentage: number | null
+          course_id: string | null
+          created_at: string | null
+          enrollment_id: string | null
+          id: string
+          issued_at: string | null
+        }
+        Insert: {
+          certificate_url?: string | null
+          completion_percentage?: number | null
+          course_id?: string | null
+          created_at?: string | null
+          enrollment_id?: string | null
+          id?: string
+          issued_at?: string | null
+        }
+        Update: {
+          certificate_url?: string | null
+          completion_percentage?: number | null
+          course_id?: string | null
+          created_at?: string | null
+          enrollment_id?: string | null
+          id?: string
+          issued_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_certificates_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "course_certificates_enrollment_id_fkey"
+            columns: ["enrollment_id"]
+            isOneToOne: false
+            referencedRelation: "course_enrollments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       course_content: {
         Row: {
           content_type: string | null
@@ -172,6 +217,54 @@ export type Database = {
             columns: ["course_id"]
             isOneToOne: false
             referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      course_discussions: {
+        Row: {
+          content: string
+          course_id: string | null
+          created_at: string | null
+          enrollment_id: string | null
+          id: string
+          lesson_id: number | null
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          content: string
+          course_id?: string | null
+          created_at?: string | null
+          enrollment_id?: string | null
+          id?: string
+          lesson_id?: number | null
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          content?: string
+          course_id?: string | null
+          created_at?: string | null
+          enrollment_id?: string | null
+          id?: string
+          lesson_id?: number | null
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_discussions_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "course_discussions_enrollment_id_fkey"
+            columns: ["enrollment_id"]
+            isOneToOne: false
+            referencedRelation: "course_enrollments"
             referencedColumns: ["id"]
           },
         ]
@@ -321,6 +414,45 @@ export type Database = {
           },
         ]
       }
+      discussion_replies: {
+        Row: {
+          content: string
+          created_at: string | null
+          discussion_id: string | null
+          enrollment_id: string | null
+          id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string | null
+          discussion_id?: string | null
+          enrollment_id?: string | null
+          id?: string
+        }
+        Update: {
+          content?: string
+          created_at?: string | null
+          discussion_id?: string | null
+          enrollment_id?: string | null
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "discussion_replies_discussion_id_fkey"
+            columns: ["discussion_id"]
+            isOneToOne: false
+            referencedRelation: "course_discussions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "discussion_replies_enrollment_id_fkey"
+            columns: ["enrollment_id"]
+            isOneToOne: false
+            referencedRelation: "course_enrollments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       instructors: {
         Row: {
           avatar_url: string | null
@@ -351,6 +483,38 @@ export type Database = {
         }
         Relationships: []
       }
+      lesson_bookmarks: {
+        Row: {
+          created_at: string | null
+          enrollment_id: string | null
+          id: string
+          lesson_id: number
+          timestamp_seconds: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          enrollment_id?: string | null
+          id?: string
+          lesson_id: number
+          timestamp_seconds?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          enrollment_id?: string | null
+          id?: string
+          lesson_id?: number
+          timestamp_seconds?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lesson_bookmarks_enrollment_id_fkey"
+            columns: ["enrollment_id"]
+            isOneToOne: false
+            referencedRelation: "course_enrollments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lesson_progress: {
         Row: {
           completed_at: string | null
@@ -379,6 +543,142 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "lesson_progress_enrollment_id_fkey"
+            columns: ["enrollment_id"]
+            isOneToOne: false
+            referencedRelation: "course_enrollments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      quiz_attempts: {
+        Row: {
+          completed_at: string | null
+          course_id: string | null
+          created_at: string | null
+          enrollment_id: string | null
+          id: string
+          score: number
+          student_answers: Json
+          total_points: number
+        }
+        Insert: {
+          completed_at?: string | null
+          course_id?: string | null
+          created_at?: string | null
+          enrollment_id?: string | null
+          id?: string
+          score: number
+          student_answers: Json
+          total_points: number
+        }
+        Update: {
+          completed_at?: string | null
+          course_id?: string | null
+          created_at?: string | null
+          enrollment_id?: string | null
+          id?: string
+          score?: number
+          student_answers?: Json
+          total_points?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quiz_attempts_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quiz_attempts_enrollment_id_fkey"
+            columns: ["enrollment_id"]
+            isOneToOne: false
+            referencedRelation: "course_enrollments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      quiz_questions: {
+        Row: {
+          correct_answer: string
+          course_id: string | null
+          created_at: string | null
+          id: string
+          lesson_id: number | null
+          options: Json | null
+          order_index: number | null
+          points: number | null
+          question_text: string
+          question_type: string
+          updated_at: string | null
+        }
+        Insert: {
+          correct_answer: string
+          course_id?: string | null
+          created_at?: string | null
+          id?: string
+          lesson_id?: number | null
+          options?: Json | null
+          order_index?: number | null
+          points?: number | null
+          question_text: string
+          question_type?: string
+          updated_at?: string | null
+        }
+        Update: {
+          correct_answer?: string
+          course_id?: string | null
+          created_at?: string | null
+          id?: string
+          lesson_id?: number | null
+          options?: Json | null
+          order_index?: number | null
+          points?: number | null
+          question_text?: string
+          question_type?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quiz_questions_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      student_notes: {
+        Row: {
+          created_at: string | null
+          enrollment_id: string | null
+          id: string
+          lesson_id: number
+          note_content: string
+          timestamp_seconds: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          enrollment_id?: string | null
+          id?: string
+          lesson_id: number
+          note_content: string
+          timestamp_seconds?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          enrollment_id?: string | null
+          id?: string
+          lesson_id?: number
+          note_content?: string
+          timestamp_seconds?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_notes_enrollment_id_fkey"
             columns: ["enrollment_id"]
             isOneToOne: false
             referencedRelation: "course_enrollments"
